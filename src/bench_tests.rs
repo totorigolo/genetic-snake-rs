@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_imports)]
 ///! Simple speed tests. I should use `cargo bench` but I don't have time
 ///! to spend there now.
 
@@ -5,6 +6,8 @@ use game_engine::Game;
 use random_agent::RandomAgent;
 
 use std::time::{Instant, Duration};
+use game_engine::GameBoard;
+
 
 /// Test the performance with a random agents.
 pub fn test_random_agent_simulation_speed(nb_agents: u32, continue_if_winner: bool) {
@@ -12,18 +15,23 @@ pub fn test_random_agent_simulation_speed(nb_agents: u32, continue_if_winner: bo
     let mut steps: u128 = 0;
     const NB_SIMULATION: u32 = 100_000;
     for _ in 0..NB_SIMULATION {
+        // Build the game
         let mut game = Game::new(30, 6);
         game.continue_simulation_if_known_winner(continue_if_winner);
         for id in 0..nb_agents {
             game.add_snake(id, Box::from(RandomAgent::new()));
         }
+
+        // Execute the simulation and get results
         let results = game
             .initialize()
 //            .print()
 //            .after_each_step(|board: &GameBoard| board.print())
             .run_to_end();
+//        println!("Results: {:?}", results);
+
+        // Keep track of the total number of steps
         steps += results.steps as u128;
-//        println!("Results: {:?}", _results);
     };
 
     let duration = as_millis(start_time.elapsed());

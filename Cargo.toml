@@ -5,3 +5,4 @@ authors = ["Thomas Lacroix <toto.rigolo@free.fr>"]
 
 [dependencies]
 rand = "*"
+genevo = "*"

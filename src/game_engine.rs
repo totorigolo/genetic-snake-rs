@@ -388,6 +388,7 @@ impl Game {
         self
     }
 
+    #[allow(dead_code)]
     pub fn print(&mut self) -> &mut Self {
         self.board.print();
         self
@@ -418,26 +419,28 @@ impl Game {
         }
 
         // Verify if win/loose/draw
-        // * Draw: all die
-        if prev_nb_alive > 0 && nb_alive == 0 {
-            self.results = Some(GameResults {
-                winner: match self.snakes.len() > 1 {
-                    true => Some(GameResultWinner::DRAW),
-                    false => None // solo, no winner
-                },
-                steps: self.step + 1,
-            });
-        }
-        // * Winner: last alive, >1 snake total
-        if prev_nb_alive > 0 && nb_alive == 1 && self.snakes.len() > 1 {
-            let winner_id: SnakeId = self.snakes.iter()
-                .filter_map(|snake| if snake.state.alive { Some(snake.id) } else { None })
-                .take(1)
-                .next().unwrap();
-            self.results = Some(GameResults {
-                winner: Some(GameResultWinner::WINNER(winner_id)),
-                steps: self.step + 1,
-            });
+        if self.results.is_none() {
+            // * Draw: all die
+            if prev_nb_alive > 0 && nb_alive == 0 {
+                self.results = Some(GameResults {
+                    winner: match self.snakes.len() > 1 {
+                        true => Some(GameResultWinner::DRAW),
+                        false => None // solo, no winner
+                    },
+                    steps: self.step + 1,
+                });
+            }
+            // * Winner: last alive, >1 snake total
+            if prev_nb_alive > 0 && nb_alive == 1 && self.snakes.len() > 1 {
+                let winner_id: SnakeId = self.snakes.iter()
+                    .filter_map(|snake| if snake.state.alive { Some(snake.id) } else { None })
+                    .take(1)
+                    .next().unwrap();
+                self.results = Some(GameResults {
+                    winner: Some(GameResultWinner::WINNER(winner_id)),
+                    steps: self.step + 1,
+                });
+            }
         }
 
         // After-step callbacks
@@ -516,6 +519,7 @@ impl GameBoard {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_tile_at_coord(&mut self, coord: Coordinate, cell: Cell) {
         let width = self.width;
         self.set_tile_at_pos(coord.to_pos(width), cell)
@@ -530,6 +534,30 @@ impl GameBoard {
         }
     }
 
+    pub fn get_non_suicide_moves(&self,
+                             from: &Coordinate,
+                             orientation: &Orientation,
+    ) -> Vec<Action> {
+        [Action::LEFT, Action::FRONT, Action::RIGHT].iter()
+            .filter_map(|action| {
+                let action = action.clone();
+
+                let next_orientation = next_orientation(&orientation, &action);
+                let next_coord = next_coord_towards(&from, &next_orientation);
+
+                if next_coord.is_out_of_bounds(&self) {
+                    return None;
+                }
+
+                match *self.get_tile_at_coord(next_coord) {
+                    Cell::EMPTY | Cell::FOOD => Some(action),
+                    _ => None
+                }
+            })
+            .collect()
+    }
+
+    #[allow(dead_code)]
     pub fn print(&self) {
         print!("+");
         for _ in 0..self.width {
