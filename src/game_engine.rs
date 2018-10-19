@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use rand::prelude::*;
 
 use std::fmt;
@@ -329,6 +327,7 @@ impl Game {
         self
     }
 
+    #[allow(dead_code)]
     pub fn before_each_step<F>(&mut self, func: F) -> &mut Self
         where F: Fn(&GameBoard) + 'static
     {
@@ -336,6 +335,7 @@ impl Game {
         self
     }
 
+    #[allow(dead_code)]
     pub fn after_each_step<F>(&mut self, func: F) -> &mut Self
         where F: Fn(&GameBoard) + 'static
     {
@@ -343,6 +343,7 @@ impl Game {
         self
     }
 
+    #[allow(dead_code)]
     pub fn continue_simulation_if_known_winner(&mut self, _continue: bool) -> &mut Self {
         self.lazy_simulation = !_continue;
         self
@@ -456,10 +457,12 @@ impl Game {
         self.results.clone().unwrap()
     }
 
+    #[allow(dead_code)]
     pub fn is_game_over(&self) -> bool {
         self.results.is_some()
     }
 
+    #[allow(dead_code)]
     pub fn get_results(&self) -> Option<GameResults> {
         self.results.clone()
     }
@@ -550,8 +553,4 @@ impl GameBoard {
         }
         println!("+");
     }
-}
-
-fn rem(x: i32, y: i32) -> i32 {
-    (x % y + y) % y
 }

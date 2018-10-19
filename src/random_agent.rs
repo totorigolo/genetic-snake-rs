@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use rand::prelude::*;
 
 use game_engine::{SnakeBot, SnakeState, GameBoard, Action, Coordinate, Orientation, Cell};
