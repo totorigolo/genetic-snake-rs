@@ -1,7 +1,14 @@
 [package]
+# TODO: Change the package name to "genetic-snake-rust"
 name = "snake-ai"
 version = "0.1.0"
 authors = ["Thomas Lacroix <toto.rigolo@free.fr>"]
+keywords = ["snake-game", "genetic", "algorithm"]
+description = """
+Learning to play Snake with Genetic Algorithm.
+"""
+readme = "README.md"
+repository = "https://github.com/totorigolo/genetic-snake-rust"
 
 [dependencies]
 rand = "*"
