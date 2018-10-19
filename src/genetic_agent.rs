@@ -20,22 +20,25 @@ pub struct WinRatioFitnessCalc;
 
 impl WinRatioFitnessCalc {
     const NB_MATCHES: usize = 15;
+
+    const BOARD_WIDTH: u16 = 40;
+    const BOARD_HEIGHT: u16 = 30;
 }
 
 impl FitnessFunction<GeneticAgentGenome, usize> for WinRatioFitnessCalc {
     fn fitness_of(&self, genome: &GeneticAgentGenome) -> usize {
         let mut nb_wins = 0;
         for _ in 0..Self::NB_MATCHES {
-            let results = Game::new(30, 6)
+            let results = Game::new(Self::BOARD_WIDTH, Self::BOARD_HEIGHT)
                 .continue_simulation_if_known_winner(false)
-                .add_snake(0, Box::from(RandomAgent::new()))
-                .add_snake(1, Box::from(GeneticAgent::new()))
+                .add_snake(0, Box::from(GeneticAgent::new()))
+                .add_snake(1, Box::from(RandomAgent::new()))
                 .initialize()
                 .run_to_end();
 //            println!("{:?}", results);
             match results.winner {
                 Some(GameResultWinner::WINNER(id)) => {
-                    if id == 1 {
+                    if id == 0 {
                         nb_wins += 2;
                     };
                 }

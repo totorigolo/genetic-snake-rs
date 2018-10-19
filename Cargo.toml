@@ -6,3 +6,4 @@ authors = ["Thomas Lacroix <toto.rigolo@free.fr>"]
 [dependencies]
 rand = "*"
 genevo = "*"
+colored = "1.6"

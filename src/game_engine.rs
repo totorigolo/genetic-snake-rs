@@ -3,6 +3,8 @@ use rand::prelude::*;
 use std::fmt;
 use std::collections::VecDeque;
 
+use colored::Colorize;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SnakeBodyType {
     HEAD,
@@ -22,24 +24,28 @@ pub enum Cell {
     SNAKE(SnakeId, SnakeBodyType),
 }
 
-impl Cell {
-    fn to_chr(&self) -> char {
-        match self {
-            Cell::EMPTY => ' ',
-            Cell::FOOD => 'o',
-            Cell::OBSTACLE => '@',
-            Cell::WALL => '#',
-            Cell::SNAKE(_, body_type) => match body_type {
-                SnakeBodyType::HEAD => 'H',
-                SnakeBodyType::BODY => 'B',
-            }
-        }
-    }
-}
-
 impl fmt::Display for Cell {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_chr())
+        match self {
+            Cell::EMPTY => write!(f, " "),
+            Cell::FOOD => write!(f, "o"),
+            Cell::OBSTACLE => write!(f, "#"),
+            Cell::WALL => unreachable!(),
+            Cell::SNAKE(id, body_type) => {
+                let s = match body_type {
+                    SnakeBodyType::HEAD => "H".to_string(),
+                    SnakeBodyType::BODY => format!("{}", id),
+                };
+                let s = match id {
+                    0 => s.green(),
+                    1 => s.red(),
+                    2 => s.blue(),
+                    3 => s.cyan(),
+                    _ => s.white()
+                };
+                write!(f, "{}", s)
+            }
+        }
     }
 }
 
@@ -301,9 +307,9 @@ impl Game {
     const NB_OBSTACLES: u32 = 5;
     const MAX_SIZE_OBSTACLE: u32 = 2;
 
-    pub fn new(width: i32, height: i32) -> Game {
+    pub fn new(width: u16, height: u16) -> Game {
         let mut game = Game {
-            board: GameBoard::new(width, height),
+            board: GameBoard::new(width as i32, height as i32),
             snakes: vec![],
             before_each_step: vec![],
             after_each_step: vec![],

@@ -1,5 +1,6 @@
-extern crate genevo;
 extern crate rand;
+extern crate genevo;
+extern crate colored;
 
 mod game_engine;
 mod random_agent;
@@ -48,15 +49,13 @@ type Genotype = GeneticAgentGenome;
 
 
 fn main() {
-//    bench_tests::test_random_agent_simulation_speed(1, true);
-//    bench_tests::test_random_agent_simulation_speed(2, false);
+//    bench_tests::test_random_agent_simulation_speed(100_000, 1, 30, 6, true, false);
+//    bench_tests::test_random_agent_simulation_speed(100_000, 2, 30, 6, false,false);
+//    bench_tests::test_random_agent_simulation_speed(1, 2, 30, 10, false, true);
     learning();
 }
 
 fn learning() {
-//    bench_tests::test_random_agent_simulation_speed(1, true);
-//    bench_tests::test_random_agent_simulation_speed(2, false);
-
     let params = Parameters::default();
 
     let initial_population: Population<Genotype> = build_population()

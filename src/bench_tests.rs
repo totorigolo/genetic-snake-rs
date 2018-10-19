@@ -10,25 +10,34 @@ use game_engine::GameBoard;
 
 
 /// Test the performance with a random agents.
-pub fn test_random_agent_simulation_speed(nb_agents: u32, continue_if_winner: bool) {
+pub fn test_random_agent_simulation_speed(nb_simulations: usize,
+                                          nb_agents: u32,
+                                          board_width: u16,
+                                          board_height: u16,
+                                          continue_if_winner: bool,
+                                          print: bool) {
     let start_time = Instant::now();
     let mut steps: u128 = 0;
-    const NB_SIMULATION: u32 = 100_000;
-    for _ in 0..NB_SIMULATION {
+    for _ in 0..nb_simulations {
         // Build the game
-        let mut game = Game::new(30, 6);
+        let mut game = Game::new(board_width, board_height);
         game.continue_simulation_if_known_winner(continue_if_winner);
         for id in 0..nb_agents {
             game.add_snake(id, Box::from(RandomAgent::new()));
+        }
+        if print {
+            game.print()
+                .after_each_step(|board: &GameBoard| board.print());
         }
 
         // Execute the simulation and get results
         let results = game
             .initialize()
-//            .print()
-//            .after_each_step(|board: &GameBoard| board.print())
             .run_to_end();
-//        println!("Results: {:?}", results);
+
+        if print {
+            println!("Results: {:?}", results);
+        }
 
         // Keep track of the total number of steps
         steps += results.steps as u128;
@@ -43,11 +52,11 @@ pub fn test_random_agent_simulation_speed(nb_agents: u32, continue_if_winner: bo
               \t- {:12.3} simulations/sec\n\
               \t- {:12.3} steps/sec",
              nb_agents,
-             NB_SIMULATION,
+             nb_simulations,
              steps,
              duration,
-             steps as f64 / NB_SIMULATION as f64,
-             NB_SIMULATION as f64 / (duration as f64 / 1000.),
+             steps as f64 / nb_simulations as f64,
+             nb_simulations as f64 / (duration as f64 / 1000.),
              steps as f64 / (duration as f64 / 1000.)
     );
 }
