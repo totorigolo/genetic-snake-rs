@@ -16,6 +16,4 @@ rand = "*"
 genevo = "*"
 colored = "*"
 lazy_static = "*"
-
-[profile.release]
-debug = true
+rayon = "*"

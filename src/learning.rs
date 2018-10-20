@@ -6,6 +6,8 @@ use genevo::types::fmt::Display;
 use genevo::genetic::FitnessFunction;
 use genevo::population::ValueEncodedGenomeBuilder;
 
+use rayon::prelude::*;
+
 use game_engine::*;
 use random_bot::RandomBot;
 use heuristic_bot::{HeuristicBot, Weights, NB_WEIGHTS};
@@ -138,25 +140,23 @@ impl WinRatioFitnessCalc {
 
 impl FitnessFunction<GeneticBotGenome, usize> for WinRatioFitnessCalc {
     fn fitness_of(&self, genome: &GeneticBotGenome) -> usize {
-        let mut nb_wins = 0;
-        for _ in 0..Self::NB_MATCHES {
-            let results = Game::new()
-                .continue_simulation_if_known_winner(false)
-                .add_snake(0, Box::from(HeuristicBot::new(genome)))
-                .add_snake(1, Box::from(HeuristicBot::default()))
-                .initialize()
-                .run_to_end();
+        (0..Self::NB_MATCHES as usize).into_par_iter()
+            .map(|_| {
+                let results = Game::new()
+                    .continue_simulation_if_known_winner(false)
+                    .add_snake(0, Box::from(HeuristicBot::new(genome)))
+                    .add_snake(1, Box::from(HeuristicBot::default()))
+                    .initialize()
+                    .run_to_end();
 //            println!("{:?}", results);
-            match results.winner {
-                Some(GameResultWinner::Winner(0)) => {
-                    nb_wins += 2;
-                }
-                Some(GameResultWinner::Draw) => nb_wins += 1,
-                _ => {}
-            }
-        }
 
-        nb_wins
+                match results.winner {
+                    Some(GameResultWinner::Winner(0)) => 2,
+                    Some(GameResultWinner::Draw) => 1,
+                    _ => 0
+                }
+            })
+            .sum()
     }
 
     fn average(&self, fitness_values: &[usize]) -> usize {
