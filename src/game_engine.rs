@@ -546,7 +546,7 @@ impl<'a> Game<'a> {
 }
 
 pub const BOARD_WIDTH: i32 = 32;
-pub const BOARD_HEIGHT: i32 = 32;
+pub const BOARD_HEIGHT: i32 = 16;
 
 /// Represents the game board.
 ///

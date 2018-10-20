@@ -7,8 +7,8 @@ use genevo::genetic::FitnessFunction;
 use genevo::population::ValueEncodedGenomeBuilder;
 
 use game_engine::*;
-use random_bot::get_non_suicide_random_action;
 use random_bot::RandomBot;
+use heuristic_bot::{HeuristicBot, Weights, NB_WEIGHTS};
 
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Parameters {
-            population_size: 250,
+            population_size: 100,
             generation_limit: 2000,
             num_individuals_per_parents: 2,
             selection_ratio: 0.7,
@@ -37,7 +37,7 @@ impl Default for Parameters {
 }
 
 #[allow(dead_code)]
-fn learning() {
+pub fn learning() {
     let params = Parameters::default();
 
     let initial_population: Population<GeneticBotGenome> = build_population()
@@ -122,11 +122,11 @@ fn learning() {
 }
 
 /// The genotype is a vector of coefficients.
-pub type GeneticBotGenome = Vec<f32>;
+pub type GeneticBotGenome = Weights;
 
-pub const GENOME_LENGTH: usize = 4;
-pub const GENOME_MIN_VALUE: f32 = -1.;
-pub const GENOME_MAX_VALUE: f32 = 1.;
+pub const GENOME_LENGTH: usize = NB_WEIGHTS;
+pub const GENOME_MIN_VALUE: f64 = -1.;
+pub const GENOME_MAX_VALUE: f64 = 1.;
 
 /// The fitness function for `GeneticBotGenome`s.
 #[derive(Clone)]
@@ -142,16 +142,14 @@ impl FitnessFunction<GeneticBotGenome, usize> for WinRatioFitnessCalc {
         for _ in 0..Self::NB_MATCHES {
             let results = Game::new()
                 .continue_simulation_if_known_winner(false)
-                .add_snake(0, Box::from(GeneticBot::new(genome)))
-                .add_snake(1, Box::from(RandomBot::new()))
+                .add_snake(0, Box::from(HeuristicBot::new(genome)))
+                .add_snake(1, Box::from(HeuristicBot::default()))
                 .initialize()
                 .run_to_end();
 //            println!("{:?}", results);
             match results.winner {
-                Some(GameResultWinner::Winner(id)) => {
-                    if id == 0 {
-                        nb_wins += 2;
-                    }
+                Some(GameResultWinner::Winner(0)) => {
+                    nb_wins += 2;
                 }
                 Some(GameResultWinner::Draw) => nb_wins += 1,
                 _ => {}
@@ -171,26 +169,5 @@ impl FitnessFunction<GeneticBotGenome, usize> for WinRatioFitnessCalc {
 
     fn lowest_possible_fitness(&self) -> usize {
         0
-    }
-}
-
-pub struct GeneticBot<'a> {
-    rng: ThreadRng,
-    genome: &'a GeneticBotGenome,
-}
-
-impl<'a> GeneticBot<'a> {
-    pub fn new(genome: &'a GeneticBotGenome) -> Self {
-        GeneticBot {
-            rng: thread_rng(),
-            genome,
-        }
-    }
-}
-
-impl<'a> SnakeBot for GeneticBot<'a> {
-    fn get_next_action(&mut self, myself: &SnakeState, board: &GameBoard) -> Action {
-        println!("{:?}", self.genome);
-        get_non_suicide_random_action(&mut self.rng, myself, board)
     }
 }

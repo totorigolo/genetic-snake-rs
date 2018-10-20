@@ -14,6 +14,7 @@ mod learning;
 
 use random_bot::RandomBot;
 use heuristic_bot::HeuristicBot;
+use learning::learning;
 
 
 fn main() {
@@ -22,6 +23,6 @@ fn main() {
 //    bench_tests::test_random_bot_simulation_speed(1, 2, false, true);
 //    bench_tests::test_simulation_speed::<RandomBot>(1, 2, false, true);
 //    bench_tests::test_simulation_speed::<HeuristicBot>(1, 2, false, true);
-    bench_tests::test_simulation_speed::<HeuristicBot>(2000, 2, false, false);
-//    learning();
+//    bench_tests::test_simulation_speed::<HeuristicBot>(2000, 2, false, false);
+    learning();
 }

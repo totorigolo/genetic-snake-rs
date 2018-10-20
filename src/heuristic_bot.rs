@@ -9,7 +9,7 @@ use random_bot::get_non_suicide_random_action;
 pub const NB_WEIGHTS: usize = 5 * 3;
 
 /// The heuristic weights
-pub type Weights = [f64; NB_WEIGHTS];
+pub type Weights = Vec<f64>;
 
 /// The maximum depth for the BFS => sight distance.
 /// Attention: It's used to normalize `Stats::accessible_area`.
@@ -18,10 +18,10 @@ pub const MAX_DEPTH: i32 = 30;
 /// Human-tuned good weights
 lazy_static!(
     pub static ref GOOD_WEIGHTS: Weights = {
-        [
+        vec![
             1., 0.2, 0.07, -0.1, -0.01,
             1., 0.2, 0.07, -0.1, -0.01,
-            1., 0.2, 0.07, -0.1, -0.01
+            1., 0.2, 0.07, -0.1, -0.01,
         ]
     };
 );
@@ -35,11 +35,8 @@ pub struct HeuristicBot<'a> {
 impl<'a> HeuristicBot<'a> {
     pub fn new(weights: &'a Weights) -> Self {
         assert_eq!(weights.len(), NB_WEIGHTS,
-                   "Got {} weights, but {} are needed.",
-                   weights.len(), NB_WEIGHTS);
-        HeuristicBot {
-            weights,
-        }
+                   "Got {} weights, but {} are needed.", weights.len(), NB_WEIGHTS);
+        HeuristicBot { weights }
     }
 }
 
