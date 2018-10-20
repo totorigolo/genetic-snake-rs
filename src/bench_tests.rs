@@ -3,27 +3,25 @@
 ///! to spend there now.
 
 use game_engine::Game;
-use random_agent::RandomAgent;
+use random_bot::RandomBot;
 
 use std::time::{Instant, Duration};
-use game_engine::GameBoard;
+use game_engine::{GameBoard, SnakeBot};
 
 
-/// Test the performance with a random agents.
-pub fn test_random_agent_simulation_speed(nb_simulations: usize,
-                                          nb_agents: u32,
-                                          board_width: u16,
-                                          board_height: u16,
-                                          continue_if_winner: bool,
-                                          print: bool) {
+/// Test the performance with `nb_bots` random bots.
+pub fn test_random_bot_simulation_speed(nb_simulations: usize,
+                                        nb_bots: u32,
+                                        continue_if_winner: bool,
+                                        print: bool) {
     let start_time = Instant::now();
     let mut steps: u128 = 0;
     for _ in 0..nb_simulations {
         // Build the game
-        let mut game = Game::new(board_width, board_height);
+        let mut game = Game::new();
         game.continue_simulation_if_known_winner(continue_if_winner);
-        for id in 0..nb_agents {
-            game.add_snake(id, Box::from(RandomAgent::new()));
+        for id in 0..nb_bots {
+            game.add_snake(id, Box::from(RandomBot::new()));
         }
         if print {
             game.print()
@@ -41,17 +39,69 @@ pub fn test_random_agent_simulation_speed(nb_simulations: usize,
 
         // Keep track of the total number of steps
         steps += results.steps as u128;
-    };
+    }
 
     let duration = as_millis(start_time.elapsed());
-    println!("Simulation with {} agents ended:\n\
+    println!("Simulation with {} bots ended:\n\
               \t- {:12} simulations\n\
               \t- {:12} total steps\n\
               \t- {:12.3} total time ms\n\
               \t- {:12.3} steps/simulation\n\
               \t- {:12.3} simulations/sec\n\
               \t- {:12.3} steps/sec",
-             nb_agents,
+             nb_bots,
+             nb_simulations,
+             steps,
+             duration,
+             steps as f64 / nb_simulations as f64,
+             nb_simulations as f64 / (duration as f64 / 1000.),
+             steps as f64 / (duration as f64 / 1000.)
+    );
+}
+
+/// Test the performance with `nb_bots` bots of type `Bot`.
+pub fn test_simulation_speed<Bot: SnakeBot + Default>(nb_simulations: usize,
+                                                      nb_bots: u32,
+                                                      continue_if_winner: bool,
+                                                      print: bool) {
+    let start_time = Instant::now();
+    let mut steps: u128 = 0;
+    for _ in 0..nb_simulations {
+        // Build the game
+        let mut game = Game::new();
+        game.continue_simulation_if_known_winner(continue_if_winner);
+        if print {
+            game.print()
+                .after_each_step(|board: &GameBoard| board.print());
+        }
+
+        // Add the bots
+        for id in 0..nb_bots {
+            game.add_snake(id, Box::from(Bot::default()));
+        }
+
+        // Execute the simulation and get results
+        let results = game
+            .initialize()
+            .run_to_end();
+
+        if print {
+            println!("Results: {:?}", results);
+        }
+
+        // Keep track of the total number of steps
+        steps += results.steps as u128;
+    }
+
+    let duration = as_millis(start_time.elapsed());
+    println!("Simulation with {} bots ended:\n\
+              \t- {:12} simulations\n\
+              \t- {:12} total steps\n\
+              \t- {:12.3} total time ms\n\
+              \t- {:12.3} steps/simulation\n\
+              \t- {:12.3} simulations/sec\n\
+              \t- {:12.3} steps/sec",
+             nb_bots,
              nb_simulations,
              steps,
              duration,

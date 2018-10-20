@@ -9,8 +9,13 @@ Learning to play Snake with Genetic Algorithm.
 """
 readme = "README.md"
 repository = "https://github.com/totorigolo/genetic-snake-rust"
+# TODO: edition = "2018"
 
 [dependencies]
 rand = "*"
 genevo = "*"
-colored = "1.6"
+colored = "*"
+lazy_static = "*"
+
+[profile.release]
+debug = true
