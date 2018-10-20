@@ -140,9 +140,9 @@ pub fn compute_stats_from(snake_id: &SnakeId, coord: &Option<Coordinate>, board:
     let mut sum_dist_enemy_tails = 0.;
     let mut min_dist_to_food = board_diag_size as i32;
 
-    // Visited set and fringe queue
-    let mut visited = [false; NB_CELLS];
-    let mut queue = [(0, 0); NB_CELLS * 4];
+    // Added set and fringe queue
+    let mut added = [false; NB_CELLS];
+    let mut queue = [(0, 0); NB_CELLS];
     let mut queue_front: usize = 0;
     let mut queue_back: usize = 0;
 
@@ -150,8 +150,10 @@ pub fn compute_stats_from(snake_id: &SnakeId, coord: &Option<Coordinate>, board:
     // => don't perform the BFS if not free
     if let Some(coord) = coord {
         if board.is_coord_free_or_food(&coord) {
-            queue[queue_back] = (coord.to_pos(), 0_i32);
+            let pos = coord.to_pos();
+            queue[queue_back] = (pos, 0_i32);
             queue_back += 1;
+            added[pos as usize] = true;
         }
     }
 
@@ -161,20 +163,13 @@ pub fn compute_stats_from(snake_id: &SnakeId, coord: &Option<Coordinate>, board:
         let (pos, dist) = queue[queue_front];
         queue_front += 1;
 
-        // Don't visit the same position twice
-        if pos < 0 || pos >= NB_CELLS as i32 || visited[pos as usize] {
-            continue;
-        }
-        visited[pos as usize] = true;
-
         // Check the max depth
         if dist > MAX_DEPTH {
             break;
         }
 
         // Update the stats depending on the current free-tile type
-        let tile_type = board.get_tile_at_pos(&pos);
-        match *tile_type {
+        match board.get_tile_at_pos(&pos) {
             Cell::Empty => accessible_area += 1.,// / (dist + 1) as f64,
             Cell::Food => {
                 accessible_area += 1.;// / (dist + 1) as f64;
@@ -192,32 +187,30 @@ pub fn compute_stats_from(snake_id: &SnakeId, coord: &Option<Coordinate>, board:
             Coordinate { x, y: y - 1 },
             Coordinate { x, y: y + 1 },
         ].iter()
-            .filter(|coord| !coord.is_out_of_bounds())
-            .map(|coord| coord.to_pos())
-            .filter(|pos| {
-                // Update the stats depending on the neighbor non-free-tile type
-                match *board.get_tile_at_pos(&pos) {
-                    Cell::SnakeHead(id) => {
-                        if id != *snake_id && !visited[*pos as usize] {
-                            sum_dist_enemy_heads += dist as f64;
-                            visited[*pos as usize] = true;
+            .for_each(|coord| {
+                let pos = coord.to_pos();
+                if !coord.is_out_of_bounds() && !added[pos as usize] {
+                    // Update the stats depending on the neighbor non-free-tile type
+                    match board.get_tile_at_pos(&pos) {
+                        Cell::SnakeHead(id) => {
+                            if id != *snake_id {
+                                sum_dist_enemy_heads += dist as f64;
+                            }
                         }
-                    },
-                    Cell::SnakeTail(id) => {
-                        if id != *snake_id && !visited[*pos as usize] {
-                            sum_dist_enemy_tails += dist as f64;
-                            visited[*pos as usize] = true;
+                        Cell::SnakeTail(id) => {
+                            if id != *snake_id {
+                                sum_dist_enemy_tails += dist as f64;
+                            }
                         }
-                    },
-                    _ => {}
+                        Cell::Empty | Cell::Food => {
+                            // Add the neighbor the the fringe
+                            queue[queue_back] = (pos, dist + 1);
+                            queue_back += 1;
+                        }
+                        _ => {}
+                    }
+                    added[pos as usize] = true;
                 }
-
-                !visited[*pos as usize]
-                    && board.is_pos_free_or_food(pos)
-            })
-            .for_each(|pos| {
-                queue[queue_back] = (pos, dist + 1);
-                queue_back += 1;
             });
     }
 

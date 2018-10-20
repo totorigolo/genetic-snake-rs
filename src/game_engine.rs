@@ -267,7 +267,7 @@ impl<'a> Snake<'a> {
         let next_head_pos = next_head_coord.to_pos();
 
         // Remember if the next position is food
-        let next_pos_type = (*board.get_tile_at_pos(&next_head_pos)).clone();
+        let next_pos_type = board.get_tile_at_pos(&next_head_pos).clone();
         let food = next_pos_type == Cell::Food;
 
         // Check the growth rate
@@ -403,7 +403,7 @@ impl<'a> Game<'a> {
                 }
 
                 // Check that the cell is free
-                match *self.board.get_tile_at_pos(&p) {
+                match self.board.get_tile_at_pos(&p) {
                     Cell::Empty | Cell::Food => {
                         pos = Some(p);
                         break;
@@ -469,7 +469,7 @@ impl<'a> Game<'a> {
             .filter(|snake| snake.state.alive) {
             if let Some(head) = snake.state.positions.front() {
                 if let Cell::SnakeHead(id) = self.board.get_tile_at_pos(&head) {
-                    if *id != snake.state.id {
+                    if id != snake.state.id {
                         snake.just_died = true;
                     }
                 }
@@ -599,21 +599,16 @@ impl GameBoard {
         }
     }
 
-    #[inline]
-    pub fn get_tile_at_coord(&self, coord: &Coordinate) -> &Cell {
+    pub fn get_tile_at_coord(&self, coord: &Coordinate) -> Cell {
         if coord.is_out_of_bounds() {
-            return &Cell::Wall;
+            return Cell::Wall;
         }
         self.get_tile_at_pos(&coord.to_pos())
     }
 
-    #[inline]
-    pub fn get_tile_at_pos(&self, pos: &Position) -> &Cell {
-        if *pos >= 0 && *pos < BOARD_WIDTH * BOARD_HEIGHT {
-            &self.cells[*pos as usize]
-        } else {
-            &Cell::Wall
-        }
+    pub fn get_tile_at_pos(&self, pos: &Position) -> Cell {
+//        assert!(*pos >= 0 && *pos < BOARD_WIDTH * BOARD_HEIGHT);
+        self.cells[*pos as usize]
     }
 
     #[allow(dead_code)]
@@ -649,8 +644,9 @@ impl GameBoard {
     }
 
     #[inline]
+    #[allow(dead_code)]
     pub fn is_pos_free_or_food(&self, pos: &Position) -> bool {
-        match *self.get_tile_at_pos(pos) {
+        match self.get_tile_at_pos(pos) {
             Cell::Empty | Cell::Food => true,
             _ => false,
         }
@@ -658,7 +654,7 @@ impl GameBoard {
 
     #[inline]
     pub fn is_coord_free_or_food(&self, coord: &Coordinate) -> bool {
-        match *self.get_tile_at_coord(coord) {
+        match self.get_tile_at_coord(coord) {
             Cell::Empty | Cell::Food => true,
             _ => false,
         }
