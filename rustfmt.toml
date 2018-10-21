@@ -1,0 +1,18 @@
+# For details:
+# https://github.com/rust-lang-nursery/rustfmt/blob/master/Configurations.md
+
+# Stable options
+use_field_init_shorthand = true
+error_on_unformatted = false
+
+
+# Unstable options
+unstable_features = true
+edition = "2018"
+#format_strings = true
+#merge_imports = true
+wrap_comments = true
+reorder_impl_items = true
+
+# TODO: license_template_path
+

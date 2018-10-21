@@ -1,26 +1,23 @@
 use rand::prelude::*;
 
-use indicatif::{ProgressBar, ProgressStyle};
 use console::Style;
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input, Select};
+use indicatif::{ProgressBar, ProgressStyle};
 
 use colored::Colorize;
 
-use genevo::prelude::*;
-use genevo::operator::prelude::*;
-use genevo::types::fmt::Display;
-use genevo::genetic::FitnessFunction;
-use genevo::population::ValueEncodedGenomeBuilder;
+use genevo::{
+    genetic::FitnessFunction, operator::prelude::*, population::ValueEncodedGenomeBuilder,
+    prelude::*, types::fmt::Display,
+};
 
 use rayon::prelude::*;
 
-use game_engine::*;
-use game_engine::GameResultWinner::*;
+use game_engine::{GameResultWinner::*, *};
 use heuristic_bot::*;
-use random_bot::RandomBot;
 use interactive_bot::InteractiveBot;
+use random_bot::RandomBot;
 use DIALOG_THEME;
-
 
 /// The genotype is a vector of coefficients.
 pub type GeneticBotGenome = Weights;
@@ -74,7 +71,8 @@ impl WinRatioFitnessCalc {
 
 impl FitnessFunction<GeneticBotGenome, usize> for WinRatioFitnessCalc {
     fn fitness_of(&self, genome: &GeneticBotGenome) -> usize {
-        (0..Self::NB_MATCHES as usize).into_par_iter()
+        (0..Self::NB_MATCHES as usize)
+            .into_par_iter()
             .map(|_| {
                 let results = Game::new()
                     .continue_simulation_if_known_winner(false)
@@ -82,12 +80,11 @@ impl FitnessFunction<GeneticBotGenome, usize> for WinRatioFitnessCalc {
                     .add_snake(1, Box::from(HeuristicBot::default()))
                     .initialize()
                     .run_to_end();
-//            println!("{:?}", results);
 
                 match results.winner {
                     Some(GameResultWinner::Winner(0)) => 2,
                     Some(GameResultWinner::Draw) => 1,
-                    _ => 0
+                    _ => 0,
                 }
             })
             .sum()
@@ -112,7 +109,9 @@ pub fn learning() {
         // Ask the user if he/she wants the play against the found genome
         if Confirmation::with_theme(&*DIALOG_THEME)
             .with_text("Do you want to test the found genome?")
-            .interact().unwrap_or(false) {
+            .interact()
+            .unwrap_or(false)
+        {
             test_weights(learned_weights);
         }
     } else {
@@ -150,13 +149,12 @@ fn learn_weights() -> Option<Weights> {
                 params.selection_ratio,
                 params.num_individuals_per_parents,
             ))
-            .with_crossover(
-                MultiPointCrossBreeder::new(params.num_crossover_points))
-//            .with_mutation(RandomValueMutator::new(
-//                params.mutation_rate,
-//                GENOME_MIN_VALUE,
-//                GENOME_MAX_VALUE,
-//            ))
+            .with_crossover(MultiPointCrossBreeder::new(params.num_crossover_points))
+            //            .with_mutation(RandomValueMutator::new(
+            //                params.mutation_rate,
+            //                GENOME_MIN_VALUE,
+            //                GENOME_MAX_VALUE,
+            //            ))
             .with_mutation(BreederValueMutator::new(
                 params.mutation_rate,
                 params.mutation_range,
@@ -171,17 +169,22 @@ fn learn_weights() -> Option<Weights> {
             ))
             .with_initial_population(initial_population)
             .build(),
-    ).until(or(
+    )
+    .until(or(
         FitnessLimit::new(target_fitness),
         GenerationLimit::new(params.generation_limit),
     ))
-        .build();
+    .build();
 
     // The progress bar, to entertain during the learning
     let max_fitness_bar = ProgressBar::new(target_fitness as u64);
-    max_fitness_bar.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:0.cyan/blue}] {pos}/{len}\n\n")
-        .progress_chars("#>-"));
+    max_fitness_bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{wide_bar:0.cyan/blue}] {pos}/{len}\n\n",
+            )
+            .progress_chars("#>-"),
+    );
 
     // Run the learning
     loop {
@@ -190,17 +193,16 @@ fn learn_weights() -> Option<Weights> {
             Ok(SimResult::Intermediate(step)) => {
                 let evaluated_population = step.result.evaluated_population;
                 let best_solution = step.result.best_solution;
-                println!("{}\n\
-                          --> population_size: {}, average_fitness: {}, best fitness: {}\n\
-                          --> duration: {}, processing_time: {}\n\
-                          {}\n\n",
-                         format!("[Generation {}]", step.iteration).yellow(),
-                         evaluated_population.individuals().len(),
-                         evaluated_population.average_fitness(),
-                         best_solution.solution.fitness,
-                         step.duration.fmt(),
-                         step.processing_time.fmt(),
-                         PrettyWeights(&best_solution.solution.genome)
+                println!(
+                    "{}\n--> population_size: {}, average_fitness: {}, best fitness: {}\n--> \
+                     duration: {}, processing_time: {}\n{}\n\n",
+                    format!("[Generation {}]", step.iteration).yellow(),
+                    evaluated_population.individuals().len(),
+                    evaluated_population.average_fitness(),
+                    best_solution.solution.fitness,
+                    step.duration.fmt(),
+                    step.processing_time.fmt(),
+                    PrettyWeights(&best_solution.solution.genome)
                 );
                 max_fitness_bar.set_position(best_solution.solution.fitness as u64);
             }
@@ -209,20 +211,19 @@ fn learn_weights() -> Option<Weights> {
 
                 let evaluated_population = step.result.evaluated_population;
                 let best_solution = step.result.best_solution;
-                println!("{} Best solution: generation {}\n\
-                          --> {}\n\
-                          --> population_size: {}, average_fitness: {}, best fitness: {}\n\
-                          --> duration: {}, processing_time: {}\n\
-                          {}\n\n",
-                         format!("[Generation {}]", step.iteration).yellow(),
-                         format!("{}", best_solution.generation).yellow(),
-                         stop_reason.green(),
-                         evaluated_population.individuals().len(),
-                         evaluated_population.average_fitness(),
-                         best_solution.solution.fitness,
-                         duration.fmt(),
-                         processing_time.fmt(),
-                         PrettyWeights(&best_solution.solution.genome)
+                println!(
+                    "{} Best solution: generation {}\n--> {}\n--> population_size: {}, \
+                     average_fitness: {}, best fitness: {}\n--> duration: {}, processing_time: \
+                     {}\n{}\n\n",
+                    format!("[Generation {}]", step.iteration).yellow(),
+                    format!("{}", best_solution.generation).yellow(),
+                    stop_reason.green(),
+                    evaluated_population.individuals().len(),
+                    evaluated_population.average_fitness(),
+                    best_solution.solution.fitness,
+                    duration.fmt(),
+                    processing_time.fmt(),
+                    PrettyWeights(&best_solution.solution.genome)
                 );
 
                 return Some(best_solution.solution.genome.clone());
@@ -258,14 +259,24 @@ fn test_weights(weights: Weights) {
 
         // Add the bot corresponding to the user's choice
         match bot_choice {
-            0 => { game.add_snake(1, Box::from(RandomBot::new())); }
-            1 => { game.add_snake(1, Box::from(HeuristicBot::default())); }
+            0 => {
+                game.add_snake(1, Box::from(RandomBot::new()));
+            }
+            1 => {
+                game.add_snake(1, Box::from(HeuristicBot::default()));
+            }
             2 => {
-                println!("You play the {} and start toward the {}.", "red snake".red(), "NORTH".yellow());
+                println!(
+                    "You play the {} and start toward the {}.",
+                    "red snake".red(),
+                    "NORTH".yellow()
+                );
                 game.add_snake(1, Box::from(InteractiveBot {}));
             }
-            3 => { break; }
-            _ => unreachable!()
+            3 => {
+                break;
+            }
+            _ => unreachable!(),
         }
 
         // Run the game until its end
@@ -280,20 +291,36 @@ fn test_weights(weights: Weights) {
         if let Some(Winner(winner_id)) = results.winner {
             if winner_id == 1 {
                 match bot_choice {
-                    0 => println!("{}", format!("RandomBot won in {} moves!", results.steps).red()),
-                    1 => println!("{}", format!("HeuristicBot won in {} moves!", results.steps).red()),
+                    0 => println!(
+                        "{}",
+                        format!("RandomBot won in {} moves!", results.steps).red()
+                    ),
+                    1 => println!(
+                        "{}",
+                        format!("HeuristicBot won in {} moves!", results.steps).red()
+                    ),
                     2 => println!("{}", format!("You won in {} moves!", results.steps).green()),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
             } else {
-                if bot_choice == 2 { // Human player, different message
-                    println!("{}", format!("The learned bot beat you in {} moves!", results.steps).red());
+                if bot_choice == 2 {
+                    // Human player, different message
+                    println!(
+                        "{}",
+                        format!("The learned bot beat you in {} moves!", results.steps).red()
+                    );
                 } else {
-                    println!("{}", format!("The learned bot won in {} moves!", results.steps).green());
+                    println!(
+                        "{}",
+                        format!("The learned bot won in {} moves!", results.steps).green()
+                    );
                 }
             }
         } else {
-            println!("{}", format!("It's a draw! ({} moves)", results.steps).yellow());
+            println!(
+                "{}",
+                format!("It's a draw! ({} moves)", results.steps).yellow()
+            );
         }
         println!();
 

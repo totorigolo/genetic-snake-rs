@@ -1,7 +1,6 @@
 use rand::prelude::*;
 
-use std::fmt;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt};
 
 use colored::Colorize;
 
@@ -91,82 +90,63 @@ pub enum Orientation {
 
 pub fn next_orientation(current_orientation: &Orientation, action: &Action) -> Orientation {
     match *current_orientation {
-        Orientation::North => {
-            match *action {
-                Action::Left => Orientation::West,
-                Action::Front => Orientation::North,
-                Action::Right => Orientation::East,
-            }
-        }
-        Orientation::East => {
-            match *action {
-                Action::Left => Orientation::North,
-                Action::Front => Orientation::East,
-                Action::Right => Orientation::South,
-            }
-        }
-        Orientation::South => {
-            match *action {
-                Action::Left => Orientation::East,
-                Action::Front => Orientation::South,
-                Action::Right => Orientation::West,
-            }
-        }
-        Orientation::West => {
-            match *action {
-                Action::Left => Orientation::South,
-                Action::Front => Orientation::West,
-                Action::Right => Orientation::North,
-            }
-        }
+        Orientation::North => match *action {
+            Action::Left => Orientation::West,
+            Action::Front => Orientation::North,
+            Action::Right => Orientation::East,
+        },
+        Orientation::East => match *action {
+            Action::Left => Orientation::North,
+            Action::Front => Orientation::East,
+            Action::Right => Orientation::South,
+        },
+        Orientation::South => match *action {
+            Action::Left => Orientation::East,
+            Action::Front => Orientation::South,
+            Action::Right => Orientation::West,
+        },
+        Orientation::West => match *action {
+            Action::Left => Orientation::South,
+            Action::Front => Orientation::West,
+            Action::Right => Orientation::North,
+        },
     }
 }
 
 /// Returns None if the move leads outside of the board
 pub fn next_coord_towards(from: &Coordinate, orientation: &Orientation) -> Option<Coordinate> {
-
     // Check if the move is in-bounds
-    if (*orientation == Orientation::West && from.x == 0) ||
-        (*orientation == Orientation::East && from.x == BOARD_WIDTH - 1) ||
-        (*orientation == Orientation::North && from.y == 0) ||
-        (*orientation == Orientation::South && from.y == BOARD_HEIGHT - 1) {
+    if (*orientation == Orientation::West && from.x == 0)
+        || (*orientation == Orientation::East && from.x == BOARD_WIDTH - 1)
+        || (*orientation == Orientation::North && from.y == 0)
+        || (*orientation == Orientation::South && from.y == BOARD_HEIGHT - 1)
+    {
         return None;
     }
 
     let next_coord = match orientation {
-        Orientation::North => {
-            Coordinate {
-                x: from.x,
-                y: from.y - 1,
-            }
-        }
-        Orientation::East => {
-            Coordinate {
-                x: from.x + 1,
-                y: from.y,
-            }
-        }
-        Orientation::South => {
-            Coordinate {
-                x: from.x,
-                y: from.y + 1,
-            }
-        }
-        Orientation::West => {
-            Coordinate {
-                x: from.x - 1,
-                y: from.y,
-            }
-        }
+        Orientation::North => Coordinate {
+            x: from.x,
+            y: from.y - 1,
+        },
+        Orientation::East => Coordinate {
+            x: from.x + 1,
+            y: from.y,
+        },
+        Orientation::South => Coordinate {
+            x: from.x,
+            y: from.y + 1,
+        },
+        Orientation::West => Coordinate {
+            x: from.x - 1,
+            y: from.y,
+        },
     };
     Some(next_coord)
 }
 
 pub trait SnakeBot {
-    fn get_next_action(&mut self,
-                       myself: &SnakeState,
-                       board: &GameBoard)
-                       -> Action;
+    fn get_next_action(&mut self, myself: &SnakeState, board: &GameBoard) -> Action;
 }
 
 pub struct SnakeState {
@@ -181,7 +161,10 @@ pub struct SnakeState {
 impl SnakeState {
     #[inline]
     pub fn get_head_pos(&self) -> Position {
-        *self.positions.front().expect("get_head_pos() called before the game started.")
+        *self
+            .positions
+            .front()
+            .expect("get_head_pos() called before the game started.")
     }
 
     #[inline]
@@ -240,7 +223,8 @@ impl<'a> Snake<'a> {
 
         let current_orientation: Orientation = self.state.current_orientation.clone();
         let next_orientation = next_orientation(&current_orientation, &action);
-        let current_head_pos = self.state
+        let current_head_pos = self
+            .state
             .positions
             .front()
             .expect("The game hasn't been initialized.")
@@ -294,10 +278,13 @@ impl<'a> Snake<'a> {
         }
 
         // Update the head and tail on the board
-        board.set_tile_at_pos(*self.state.positions.back().expect("0-length Snake in execute_action()."),
-                              Cell::SnakeTail(self.state.id));
-        board.set_tile_at_pos(next_head_pos,
-                              Cell::SnakeHead(self.state.id));
+        let tail_pos = *self
+            .state
+            .positions
+            .back()
+            .expect("0-length Snake in execute_action().");
+        board.set_tile_at_pos(tail_pos, Cell::SnakeTail(self.state.id));
+        board.set_tile_at_pos(next_head_pos, Cell::SnakeHead(self.state.id));
     }
 
     fn remove_snake_from_board(&self, board: &mut GameBoard) {
@@ -338,8 +325,8 @@ pub struct Game<'a> {
 }
 
 impl<'a> Game<'a> {
-    const NB_OBSTACLES: u32 = 5;
     const MAX_SIZE_OBSTACLE: u32 = 2;
+    const NB_OBSTACLES: u32 = 5;
 
     pub fn new() -> Self {
         let mut game = Game {
@@ -352,12 +339,19 @@ impl<'a> Game<'a> {
             results: None,
             lazy_simulation: true,
         };
-        game.board.add_random_obstacles(Self::NB_OBSTACLES, Self::MAX_SIZE_OBSTACLE);
+        game.board
+            .add_random_obstacles(Self::NB_OBSTACLES, Self::MAX_SIZE_OBSTACLE);
         game
     }
 
     pub fn add_snake(&mut self, id: SnakeId, snake_bot: Box<SnakeBot + 'a>) -> &mut Self {
-        if self.snakes.iter().filter(|snake| snake.state.id == id).count() > 0 {
+        if self
+            .snakes
+            .iter()
+            .filter(|snake| snake.state.id == id)
+            .count()
+            > 0
+        {
             panic!(format!("The ID {} is already used!", id));
         }
         self.snakes.push(Snake::new(id, snake_bot));
@@ -366,7 +360,8 @@ impl<'a> Game<'a> {
 
     #[allow(dead_code)]
     pub fn before_each_step<F>(&mut self, func: F) -> &mut Self
-        where F: Fn(&GameBoard) + 'static
+    where
+        F: Fn(&GameBoard) + 'static,
     {
         self.before_each_step.push(Box::new(func));
         self
@@ -374,7 +369,8 @@ impl<'a> Game<'a> {
 
     #[allow(dead_code)]
     pub fn after_each_step<F>(&mut self, func: F) -> &mut Self
-        where F: Fn(&GameBoard) + 'static
+    where
+        F: Fn(&GameBoard) + 'static,
     {
         self.after_each_step.push(Box::new(func));
         self
@@ -418,7 +414,8 @@ impl<'a> Game<'a> {
             snake.state.current_orientation = Orientation::North;
 
             // Update the board
-            self.board.set_tile_at_pos(pos, Cell::SnakeHead(snake.state.id));
+            self.board
+                .set_tile_at_pos(pos, Cell::SnakeHead(snake.state.id));
         }
         self.initialized = true;
         self
@@ -440,7 +437,9 @@ impl<'a> Game<'a> {
         }
 
         // Remember which snakes are still alive
-        let prev_nb_alive = self.snakes.iter()
+        let prev_nb_alive = self
+            .snakes
+            .iter()
             .filter(|snake| snake.state.alive)
             .map(|snake| snake.state.id)
             .count();
@@ -450,23 +449,24 @@ impl<'a> Game<'a> {
 
         // Take the snakes' next actions
         let mut actions = vec![];
-        for ref mut snake in self.snakes.iter_mut()
-            .filter(|snake| snake.state.alive) {
+        for ref mut snake in self.snakes.iter_mut().filter(|snake| snake.state.alive) {
             actions.push(snake.get_next_action(&self.board));
         }
 
         // Move the snakes
-        for (ref mut snake, ref action) in self.snakes.iter_mut()
+        for (ref mut snake, ref action) in self
+            .snakes
+            .iter_mut()
             .filter(|snake| snake.state.alive)
-            .zip(actions) {
+            .zip(actions)
+        {
             if let Some(action) = action {
                 snake.execute_action(&mut self.board, action);
             }
         }
 
         // Check head collisions
-        for ref mut snake in self.snakes.iter_mut()
-            .filter(|snake| snake.state.alive) {
+        for ref mut snake in self.snakes.iter_mut().filter(|snake| snake.state.alive) {
             if let Some(head) = snake.state.positions.front() {
                 if let Cell::SnakeHead(id) = self.board.get_tile_at_pos(&head) {
                     if id != snake.state.id {
@@ -500,7 +500,8 @@ impl<'a> Game<'a> {
             }
             // * Winner: last alive, >1 snake total
             if prev_nb_alive > 0 && nb_alive == 1 && self.snakes.len() > 1 {
-                let winner_id: SnakeId = self.snakes
+                let winner_id: SnakeId = self
+                    .snakes
                     .iter()
                     .filter(|snake| snake.state.alive)
                     .map(|snake| snake.state.id)
@@ -526,12 +527,15 @@ impl<'a> Game<'a> {
     }
 
     pub fn run_to_end(&mut self) -> GameResults {
-        while self.results.is_none() ||
-            (!self.lazy_simulation &&
-                self.snakes.iter().filter(|snake| snake.state.alive).count() > 0) {
+        while self.results.is_none()
+            || (!self.lazy_simulation
+                && self.snakes.iter().filter(|snake| snake.state.alive).count() > 0)
+        {
             self.step();
         }
-        self.results.clone().expect("Logic error, no result in run_to_end().")
+        self.results
+            .clone()
+            .expect("Logic error, no result in run_to_end().")
     }
 
     #[allow(dead_code)]
@@ -550,8 +554,9 @@ pub const BOARD_HEIGHT: i32 = 16;
 
 /// Represents the game board.
 ///
-/// `cells` is a 1D representation of the 2D board, where rows are "concatenated"
-/// on one single row, so `(x, y)` is the `(x + y * width)`-th value.
+/// `cells` is a 1D representation of the 2D board, where rows are
+/// "concatenated" on one single row, so `(x, y)` is the `(x + y * width)`-th
+/// value.
 pub struct GameBoard {
     /// The number of non-OBSTACLE cells.
     pub nb_free_cells: i32,
@@ -584,10 +589,7 @@ impl GameBoard {
 
             for i in 0..w {
                 for j in 0..w {
-                    let coord = Coordinate {
-                        x: x + i,
-                        y: y + j,
-                    };
+                    let coord = Coordinate { x: x + i, y: y + j };
                     self.cells[coord.to_pos() as usize] = Cell::Obstacle;
                     self.nb_free_cells -= 1;
                 }
@@ -600,7 +602,7 @@ impl GameBoard {
         for i in 0..(BOARD_WIDTH * BOARD_HEIGHT) as usize {
             match self.cells[i] {
                 Cell::Empty | Cell::Food => self.nb_free_cells += 1,
-                _ => {},
+                _ => {}
             }
         }
 
@@ -628,7 +630,7 @@ impl GameBoard {
     }
 
     pub fn get_tile_at_pos(&self, pos: &Position) -> Cell {
-//        assert!(*pos >= 0 && *pos < BOARD_WIDTH * BOARD_HEIGHT);
+        // assert!(*pos >= 0 && *pos < BOARD_WIDTH * BOARD_HEIGHT);
         self.cells[*pos as usize]
     }
 
@@ -641,18 +643,22 @@ impl GameBoard {
         if pos >= 0 && pos < BOARD_WIDTH * BOARD_HEIGHT {
             self.cells[pos as usize] = cell;
         } else {
-            panic!(format!("Position {} out-of-bounds: W={} H={} W*H={}",
-                           pos,
-                           BOARD_WIDTH, BOARD_HEIGHT,
-                           BOARD_WIDTH * BOARD_HEIGHT));
+            panic!(format!(
+                "Position {} out-of-bounds: W={} H={} W*H={}",
+                pos,
+                BOARD_WIDTH,
+                BOARD_HEIGHT,
+                BOARD_WIDTH * BOARD_HEIGHT
+            ));
         }
     }
 
-    pub fn is_suicide_moves(&self,
-                            from: &Coordinate,
-                            orientation: &Orientation,
-                            action: &Action)
-                            -> bool {
+    pub fn is_suicide_moves(
+        &self,
+        from: &Coordinate,
+        orientation: &Orientation,
+        action: &Action,
+    ) -> bool {
         let next_orientation = next_orientation(&orientation, action);
         let next_coord = next_coord_towards(&from, &next_orientation);
         if next_coord.is_none() {
@@ -681,18 +687,19 @@ impl GameBoard {
         }
     }
 
-    pub fn get_non_suicide_moves(&self,
-                                 from: &Coordinate,
-                                 orientation: &Orientation)
-                                 -> Vec<Action> {
+    pub fn get_non_suicide_moves(
+        &self,
+        from: &Coordinate,
+        orientation: &Orientation,
+    ) -> Vec<Action> {
         [Action::Left, Action::Front, Action::Right]
             .iter()
-            .filter_map(|action| {
-                match self.is_suicide_moves(from, orientation, action) {
+            .filter_map(
+                |action| match self.is_suicide_moves(from, orientation, action) {
                     false => Some(action.clone()),
                     true => None,
-                }
-            })
+                },
+            )
             .collect()
     }
 

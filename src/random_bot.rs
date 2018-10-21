@@ -3,14 +3,12 @@ use rand::prelude::*;
 use game_engine::*;
 
 pub struct RandomBot {
-    rng: ThreadRng
+    rng: ThreadRng,
 }
 
 impl RandomBot {
     pub fn new() -> Self {
-        RandomBot {
-            rng: thread_rng()
-        }
+        RandomBot { rng: thread_rng() }
     }
 }
 
@@ -21,19 +19,18 @@ impl Default for RandomBot {
 }
 
 impl SnakeBot for RandomBot {
-    fn get_next_action(&mut self,
-                       myself: &SnakeState,
-                       board: &GameBoard)
-                       -> Action {
+    fn get_next_action(&mut self, myself: &SnakeState, board: &GameBoard) -> Action {
         get_non_suicide_random_action(&mut self.rng, myself, board)
     }
 }
 
-pub fn get_non_suicide_random_action(rng: &mut impl Rng,
-                                     myself: &SnakeState,
-                                     board: &GameBoard) -> Action {
-    let possible_actions = board.get_non_suicide_moves(
-        &myself.get_head_coord(), &myself.current_orientation);
+pub fn get_non_suicide_random_action(
+    rng: &mut impl Rng,
+    myself: &SnakeState,
+    board: &GameBoard,
+) -> Action {
+    let possible_actions =
+        board.get_non_suicide_moves(&myself.get_head_coord(), &myself.current_orientation);
 
     return if possible_actions.is_empty() {
         Action::Front // We're doomed, so don't care ^^'
