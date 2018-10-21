@@ -20,6 +20,7 @@ rayon = "*"
 indicatif = "*"
 console = "*"
 dialoguer = { git = "https://github.com/mitsuhiko/dialoguer" }
+ctrlc = "*"
 
 [profile.release]
 debug = true

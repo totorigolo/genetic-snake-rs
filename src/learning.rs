@@ -1,3 +1,8 @@
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
+
 use rand::prelude::*;
 
 use console::Style;
@@ -186,25 +191,65 @@ fn learn_weights() -> Option<Weights> {
             .progress_chars("#>-"),
     );
 
+    // Add a Ctrl+C handler
+    let ctrlc_interrupted = Arc::new(AtomicBool::new(false));
+    let ctrlc_interrupted_inner = ctrlc_interrupted.clone();
+    let learning_stopped = Arc::new(AtomicBool::new(false));
+    let learning_stopped_inner = learning_stopped.clone();
+    ctrlc::set_handler(move || {
+        ctrlc_interrupted_inner.store(true, Ordering::SeqCst);
+
+        // Ask the reason of the Ctrl+C
+        let ctrlc_choice = Select::with_theme(&*DIALOG_THEME)
+            .with_prompt(" Ctrl+C received, what do you want to do?")
+            .default(0)
+            .item("oops, nothing")
+            .item("stop the learning")
+            .item("quit")
+            .interact()
+            .unwrap_or(2);
+
+        // Execute the action
+        match ctrlc_choice {
+            0 => {}
+            1 => {
+                learning_stopped_inner.store(true, Ordering::SeqCst);
+            }
+            2 => {
+                ::std::process::exit(0);
+            }
+            _ => unreachable!()
+        }
+
+        ctrlc_interrupted_inner.store(false, Ordering::SeqCst);
+    }).unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
+
+
     // Run the learning
     loop {
         let result = snake_simulation.step();
         match result {
             Ok(SimResult::Intermediate(step)) => {
-                let evaluated_population = step.result.evaluated_population;
-                let best_solution = step.result.best_solution;
-                println!(
-                    "{}\n--> population_size: {}, average_fitness: {}, best fitness: {}\n--> \
-                     duration: {}, processing_time: {}\n{}\n\n",
-                    format!("[Generation {}]", step.iteration).yellow(),
-                    evaluated_population.individuals().len(),
-                    evaluated_population.average_fitness(),
-                    best_solution.solution.fitness,
-                    step.duration.fmt(),
-                    step.processing_time.fmt(),
-                    PrettyWeights(&best_solution.solution.genome)
-                );
-                max_fitness_bar.set_position(best_solution.solution.fitness as u64);
+                if !ctrlc_interrupted.load(Ordering::SeqCst) {
+                    let evaluated_population = step.result.evaluated_population;
+                    let best_solution = step.result.best_solution;
+                    println!(
+                        "{}\n--> population_size: {}, average_fitness: {}, best fitness: {}\n--> \
+                         duration: {}, processing_time: {}\n{}\n\n",
+                        format!("[Generation {}]", step.iteration).yellow(),
+                        evaluated_population.individuals().len(),
+                        evaluated_population.average_fitness(),
+                        best_solution.solution.fitness,
+                        step.duration.fmt(),
+                        step.processing_time.fmt(),
+                        PrettyWeights(&best_solution.solution.genome)
+                    );
+                    max_fitness_bar.set_position(best_solution.solution.fitness as u64);
+
+                    if learning_stopped.load(Ordering::SeqCst) {
+                        return Some(best_solution.solution.genome.clone());
+                    }
+                }
             }
             Ok(SimResult::Final(step, processing_time, duration, stop_reason)) => {
                 max_fitness_bar.finish();
