@@ -6,6 +6,7 @@ extern crate colored;
 #[macro_use]
 extern crate lazy_static;
 extern crate rayon;
+extern crate indicatif;
 
 mod game_engine;
 mod bench_tests;

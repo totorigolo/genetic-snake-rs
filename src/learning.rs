@@ -1,5 +1,7 @@
 use rand::prelude::*;
 
+use indicatif::{ProgressBar, ProgressStyle};
+
 use genevo::prelude::*;
 use genevo::operator::prelude::*;
 use genevo::types::fmt::Display;
@@ -78,6 +80,12 @@ pub fn learning() {
     ))
         .build();
 
+    // The progress bar, to entertain during the learning
+    let max_fitness_bar = ProgressBar::new(WinRatioFitnessCalc.highest_possible_fitness() as u64);
+    max_fitness_bar.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:0.cyan/blue}] {pos}/{len}")
+        .progress_chars("#>-"));
+
     // Run the learning
     loop {
         let result = snake_simulation.step();
@@ -95,10 +103,13 @@ pub fn learning() {
                     step.duration.fmt(),
                     step.processing_time.fmt()
                 );
+
                 println!("      {:?}", best_solution.solution.genome);
                 //println!("| population: [{}]", evaluated_population.individuals().iter().map(|g| g.as_text())
                 //    .collect::<Vec<String>>().join("], ["));
                 println!();
+
+                max_fitness_bar.set_position(best_solution.solution.fitness as u64);
             }
             Ok(SimResult::Final(step, processing_time, duration, stop_reason)) => {
                 let best_solution = step.result.best_solution;
@@ -113,10 +124,13 @@ pub fn learning() {
                     processing_time.fmt()
                 );
                 println!("      {:?}", best_solution.solution.genome);
+
+                max_fitness_bar.finish_with_message("Ideal genome found!");
                 break;
             }
             Err(error) => {
                 println!("{}", error.display());
+                max_fitness_bar.finish_and_clear();
                 break;
             }
         }
