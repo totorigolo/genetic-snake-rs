@@ -47,7 +47,7 @@ struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Parameters {
-            population_size: 250,
+            population_size: 100,
             generation_limit: 1000,
             num_individuals_per_parents: 2,
             selection_ratio: 0.7,
@@ -155,11 +155,12 @@ fn learn_weights() -> Option<Weights> {
                 params.num_individuals_per_parents,
             ))
             .with_crossover(MultiPointCrossBreeder::new(params.num_crossover_points))
-            //            .with_mutation(RandomValueMutator::new(
-            //                params.mutation_rate,
-            //                GENOME_MIN_VALUE,
-            //                GENOME_MAX_VALUE,
-            //            ))
+            // .with_crossover(DiscreteCrossBreeder::new())
+            // .with_mutation(RandomValueMutator::new(
+            //     params.mutation_rate,
+            //     GENOME_MIN_VALUE,
+            //     GENOME_MAX_VALUE,
+            // ))
             .with_mutation(BreederValueMutator::new(
                 params.mutation_rate,
                 params.mutation_range,
