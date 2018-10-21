@@ -7,6 +7,7 @@ use DIALOG_THEME;
 
 
 /// This bot ask on stdin the next action to realize.
+#[derive(Default)]
 pub struct InteractiveBot;
 
 impl SnakeBot for InteractiveBot {

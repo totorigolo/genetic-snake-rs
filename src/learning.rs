@@ -65,7 +65,7 @@ pub struct WinRatioFitnessCalc {
 }
 
 impl WinRatioFitnessCalc {
-    const NB_MATCHES: usize = 15;
+    const NB_MATCHES: usize = 20;
 
     fn new(target_fitness: usize) -> Self {
         WinRatioFitnessCalc { target_fitness }
@@ -296,5 +296,8 @@ fn test_weights(weights: Weights) {
             println!("{}", format!("It's a draw! ({} moves)", results.steps).yellow());
         }
         println!();
+
+        // Reshow the weights, for convenience
+        println!("You played against: {}\n", PrettyWeights(&weights));
     }
 }

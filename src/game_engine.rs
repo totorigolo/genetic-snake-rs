@@ -30,7 +30,7 @@ impl fmt::Display for Cell {
 
         match self {
             Cell::Empty => write!(f, " "),
-            Cell::Food => write!(f, "o"),
+            Cell::Food => write!(f, "{}", "o".magenta().bold()),
             Cell::Obstacle => write!(f, "#"),
             Cell::Wall => unreachable!(),
             Cell::SnakeHead(id) => write!(f, "{}", colorize_snake(*id, "H".to_string())),
@@ -282,15 +282,15 @@ impl<'a> Snake<'a> {
         self.state.positions.push_front(next_head_pos);
         self.state.current_orientation = next_orientation;
 
-        // Shrink the tail if didn't eat food
-        if !food && !growing {
-            board.set_tile_at_pos(current_head_pos, Cell::SnakeBody(self.state.id));
+        // Change the current head to body
+        board.set_tile_at_pos(current_head_pos, Cell::SnakeBody(self.state.id));
+
+        // Shrink the tail if doesn't grow
+        // FIXME: If >two heads go on the same cell, only the first snake eats the food.
+        if !(food || growing) {
             if let Some(tail_pos) = self.state.positions.pop_back() {
                 board.set_tile_at_pos(tail_pos, Cell::Empty);
             }
-        } else {
-            // Update the previous head on the board
-            board.set_tile_at_pos(current_head_pos, Cell::SnakeBody(self.state.id));
         }
 
         // Update the head and tail on the board
@@ -557,6 +557,9 @@ pub struct GameBoard {
     pub nb_free_cells: i32,
     pub nb_alive_snakes: usize,
     cells: [Cell; (BOARD_WIDTH * BOARD_HEIGHT) as usize],
+
+    rng: ThreadRng,
+    food_add_probability: f32,
 }
 
 impl GameBoard {
@@ -565,6 +568,9 @@ impl GameBoard {
             nb_free_cells: BOARD_WIDTH * BOARD_HEIGHT,
             nb_alive_snakes: 0,
             cells: [Cell::Empty; (BOARD_WIDTH * BOARD_HEIGHT) as usize],
+
+            rng: thread_rng(),
+            food_add_probability: 0.1,
         }
     }
 
@@ -595,6 +601,21 @@ impl GameBoard {
             match self.cells[i] {
                 Cell::Empty | Cell::Food => self.nb_free_cells += 1,
                 _ => {},
+            }
+        }
+
+        self.update_food();
+    }
+
+    fn update_food(&mut self) {
+        let p = self.rng.gen_range(0., 1.);
+        if p < self.food_add_probability {
+            let x = self.rng.gen_range(0, BOARD_WIDTH);
+            let y = self.rng.gen_range(0, BOARD_HEIGHT);
+            let coord = Coordinate { x, y };
+            let pos = coord.to_pos();
+            if self.is_pos_free_or_food(&pos) {
+                self.set_tile_at_pos(pos, Cell::Food);
             }
         }
     }

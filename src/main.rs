@@ -23,6 +23,7 @@ mod learning;
 
 use random_bot::RandomBot;
 use heuristic_bot::HeuristicBot;
+use interactive_bot::InteractiveBot;
 use learning::learning;
 
 lazy_static!(
@@ -44,6 +45,7 @@ fn main() {
 //    bench_tests::test_random_bot_simulation_speed(1, 2, false, true);
 //    bench_tests::test_simulation_speed::<RandomBot>(1, 2, false, true);
 //    bench_tests::test_simulation_speed::<HeuristicBot>(1, 2, false, true);
+//    bench_tests::test_simulation_speed::<InteractiveBot>(1, 1, false, true);
 //    bench_tests::test_simulation_speed::<HeuristicBot>(2000, 2, false, false);
     learning();
 }
