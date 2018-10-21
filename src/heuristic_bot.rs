@@ -36,14 +36,14 @@ impl<'a> fmt::Display for PrettyWeights<'a> {
 /// Attention: It's used to normalize `Stats::accessible_area`.
 pub const MAX_DEPTH: i32 = 30;
 
-/// Human-tuned good weights
 lazy_static! {
+    /// Human-tuned good weights
     pub static ref GOOD_WEIGHTS: Weights = {
         #[cfg_attr(rustfmt, rustfmt_skip)]
         vec![
-            1., 0.2, 0.07, -0.1, -0.01,
-            1., 0.2, 0.07, -0.1, -0.01,
-            1., 0.2, 0.07, -0.1, -0.01,
+            1., 0.8, 0.07, -0.1, -0.9,
+            1., 0.8, 0.07, -0.1, -0.9,
+            1., 0.8, 0.07, -0.1, -0.9,
         ]
     };
 }
@@ -91,7 +91,7 @@ impl<'a> SnakeBot for HeuristicBot<'a> {
                 let stats = compute_stats_from(&myself.id, &next_coord, board);
                 let offset = i * NB_STATS;
                 let weight = stats.accessible_area * self.weights[offset + 0]
-                    + stats.num_accessible_food * self.weights[offset + 1]
+                    + stats.ratio_accessible_food * self.weights[offset + 1]
                     + stats.sum_dist_enemy_heads * self.weights[offset + 2]
                     + stats.sum_dist_enemy_tails * self.weights[offset + 3]
                     + stats.min_dist_to_food * self.weights[offset + 4];
@@ -117,7 +117,7 @@ impl<'a> SnakeBot for HeuristicBot<'a> {
 #[derive(Debug)]
 pub struct Stats {
     pub accessible_area: f64,
-    pub num_accessible_food: f64,
+    pub ratio_accessible_food: f64,
     pub sum_dist_enemy_heads: f64,
     pub sum_dist_enemy_tails: f64,
     pub min_dist_to_food: f64,
@@ -133,7 +133,7 @@ impl Stats {
     ) -> Self {
         Stats {
             accessible_area,
-            num_accessible_food,
+            ratio_accessible_food: num_accessible_food,
             sum_dist_enemy_heads,
             sum_dist_enemy_tails,
             min_dist_to_food,
@@ -250,9 +250,8 @@ pub fn compute_stats_from(
     // Return normalized stats
     let nb_free_cells = board.nb_free_cells;
     return Stats::new(
-        // TODO: Normalize accessible_area with other directions?
         accessible_area as f64 / nb_free_cells as f64,
-        num_accessible_food as f64 / nb_free_cells as f64, // TODO: Normalize with num_food?
+        num_accessible_food as f64 / nb_free_cells as f64,
         sum_dist_enemy_heads as f64 / max_sum_dist_enemy,
         sum_dist_enemy_tails as f64 / max_sum_dist_enemy,
         min_dist_to_food as f64 / board_diag_size,
