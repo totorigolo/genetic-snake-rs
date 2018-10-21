@@ -302,6 +302,22 @@ pub struct GameResults {
     pub steps: u32,
 }
 
+impl fmt::Display for GameResults {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self.winner {
+            Some(GameResultWinner::Winner(id)) => {
+                format!("Player {} won! ({} moves)", id, self.steps).green()
+            }
+            Some(GameResultWinner::Draw) => {
+                format!("It's a draw! ({} moves)", self.steps).yellow()
+            }
+            None => {
+                format!("The snake died after {} moves.", self.steps).blue()
+            }
+        })
+    }
+}
+
 pub struct Game<'a> {
     board: GameBoard,
     snakes: Vec<Snake<'a>>,

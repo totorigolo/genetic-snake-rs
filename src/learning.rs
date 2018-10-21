@@ -1,6 +1,12 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    time::{
+        Duration, Instant,
+    },
+    thread,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    }
 };
 
 use rand::prelude::*;
@@ -193,41 +199,45 @@ fn learn_weights() -> Option<Weights> {
     );
 
     // Add a Ctrl+C handler
+    let handler_enabled = Arc::new(AtomicBool::new(true));
+    let handler_enabled_inner = handler_enabled.clone();
     let ctrlc_interrupted = Arc::new(AtomicBool::new(false));
     let ctrlc_interrupted_inner = ctrlc_interrupted.clone();
     let learning_stopped = Arc::new(AtomicBool::new(false));
     let learning_stopped_inner = learning_stopped.clone();
     ctrlc::set_handler(move || {
-        ctrlc_interrupted_inner.store(true, Ordering::SeqCst);
+        if handler_enabled_inner.load(Ordering::SeqCst) {
+            ctrlc_interrupted_inner.store(true, Ordering::SeqCst);
 
-        // Ask the reason of the Ctrl+C
-        let ctrlc_choice = Select::with_theme(&*DIALOG_THEME)
-            .with_prompt(" Ctrl+C received, what do you want to do?")
-            .default(0)
-            .item("oops, nothing")
-            .item("stop the learning")
-            .item("quit")
-            .interact()
-            .unwrap_or(2);
+            // Ask the reason of the Ctrl+C
+            let ctrlc_choice = Select::with_theme(&*DIALOG_THEME)
+                .with_prompt(" Ctrl+C received, what do you want to do?")
+                .default(0)
+                .item("oops, nothing")
+                .item("stop the learning")
+                .item("quit")
+                .interact()
+                .unwrap_or(2);
 
-        // Execute the action
-        match ctrlc_choice {
-            0 => {}
-            1 => {
-                learning_stopped_inner.store(true, Ordering::SeqCst);
+            // Execute the action
+            match ctrlc_choice {
+                0 => {}
+                1 => {
+                    learning_stopped_inner.store(true, Ordering::SeqCst);
+                }
+                2 => {
+                    ::std::process::exit(0);
+                }
+                _ => unreachable!()
             }
-            2 => {
-                ::std::process::exit(0);
-            }
-            _ => unreachable!()
+
+            ctrlc_interrupted_inner.store(false, Ordering::SeqCst);
         }
-
-        ctrlc_interrupted_inner.store(false, Ordering::SeqCst);
     }).unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
 
-
     // Run the learning
-    loop {
+    let mut best_weights = None;
+    while !learning_stopped.load(Ordering::SeqCst) {
         let result = snake_simulation.step();
         match result {
             Ok(SimResult::Intermediate(step)) => {
@@ -235,8 +245,10 @@ fn learn_weights() -> Option<Weights> {
                     let evaluated_population = step.result.evaluated_population;
                     let best_solution = step.result.best_solution;
                     println!(
-                        "{}\n--> population_size: {}, average_fitness: {}, best fitness: {}\n--> \
-                         duration: {}, processing_time: {}\n{}\n\n",
+                        "{}\n\
+                         --> population_size: {}, average_fitness: {}, best fitness: {}\n\
+                         --> duration: {}, processing_time: {}\n\
+                         {}\n\n",
                         format!("[Generation {}]", step.iteration).yellow(),
                         evaluated_population.individuals().len(),
                         evaluated_population.average_fitness(),
@@ -248,7 +260,7 @@ fn learn_weights() -> Option<Weights> {
                     max_fitness_bar.set_position(best_solution.solution.fitness as u64);
 
                     if learning_stopped.load(Ordering::SeqCst) {
-                        return Some(best_solution.solution.genome.clone());
+                        best_weights = Some(best_solution.solution.genome.clone());
                     }
                 }
             }
@@ -258,9 +270,11 @@ fn learn_weights() -> Option<Weights> {
                 let evaluated_population = step.result.evaluated_population;
                 let best_solution = step.result.best_solution;
                 println!(
-                    "{} Best solution: generation {}\n--> {}\n--> population_size: {}, \
-                     average_fitness: {}, best fitness: {}\n--> duration: {}, processing_time: \
-                     {}\n{}\n\n",
+                    "{} Best solution: generation {}\n\
+                     --> {}\n\
+                     --> population_size: {}, average_fitness: {}, best fitness: {}\n\
+                     --> duration: {}, processing_time: {}\n\
+                     {}\n\n",
                     format!("[Generation {}]", step.iteration).yellow(),
                     format!("{}", best_solution.generation).yellow(),
                     stop_reason.green(),
@@ -272,7 +286,8 @@ fn learn_weights() -> Option<Weights> {
                     PrettyWeights(&best_solution.solution.genome)
                 );
 
-                return Some(best_solution.solution.genome.clone());
+                best_weights = Some(best_solution.solution.genome.clone());
+                break;
             }
             Err(error) => {
                 println!("{}", error.display());
@@ -281,7 +296,12 @@ fn learn_weights() -> Option<Weights> {
             }
         }
     }
-    None
+
+    // Disable the Ctrl+C handler
+    // TODO: Add a global handler
+    handler_enabled.store(false, Ordering::SeqCst);
+
+    return best_weights;
 }
 
 fn test_weights(weights: Weights) {
@@ -293,10 +313,12 @@ fn test_weights(weights: Weights) {
             .default(bot_choice)
             .item("random AI")
             .item("heuristic AI")
+            .item("random AI (slow)")
+            .item("heuristic AI (slow)")
             .item("myself")
             .item("stop")
             .interact()
-            .unwrap_or(3);
+            .unwrap_or(5);
 
         // Create the game
         let mut game = Game::new();
@@ -305,13 +327,13 @@ fn test_weights(weights: Weights) {
 
         // Add the bot corresponding to the user's choice
         match bot_choice {
-            0 => {
+            0 | 2 => {
                 game.add_snake(1, Box::from(RandomBot::new()));
             }
-            1 => {
+            1 | 3 => {
                 game.add_snake(1, Box::from(HeuristicBot::default()));
             }
-            2 => {
+            4 => {
                 println!(
                     "You play the {} and start toward the {}.",
                     "red snake".red(),
@@ -319,10 +341,14 @@ fn test_weights(weights: Weights) {
                 );
                 game.add_snake(1, Box::from(InteractiveBot {}));
             }
-            3 => {
+            _ => {
                 break;
             }
-            _ => unreachable!(),
+        }
+
+        // Add sleeps if the user asked for "slow" games
+        if bot_choice == 2 || bot_choice == 3 {
+            game.after_each_step(|_| thread::sleep(Duration::from_millis(200)));
         }
 
         // Run the game until its end
@@ -337,19 +363,19 @@ fn test_weights(weights: Weights) {
         if let Some(Winner(winner_id)) = results.winner {
             if winner_id == 1 {
                 match bot_choice {
-                    0 => println!(
+                    0 | 2 => println!(
                         "{}",
                         format!("RandomBot won in {} moves!", results.steps).red()
                     ),
-                    1 => println!(
+                    1 | 3 => println!(
                         "{}",
                         format!("HeuristicBot won in {} moves!", results.steps).red()
                     ),
-                    2 => println!("{}", format!("You won in {} moves!", results.steps).green()),
+                    4 => println!("{}", format!("You won in {} moves!", results.steps).green()),
                     _ => unreachable!(),
                 }
             } else {
-                if bot_choice == 2 {
+                if bot_choice == 4 {
                     // Human player, different message
                     println!(
                         "{}",
