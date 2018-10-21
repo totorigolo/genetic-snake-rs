@@ -2,8 +2,8 @@ use console::Style;
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input, Select};
 use indicatif::{ProgressBar, ProgressStyle};
 
-use game_engine::*;
-use DIALOG_THEME;
+use crate::game_engine::*;
+use crate::DIALOG_THEME;
 
 /// This bot ask on stdin the next action to realize.
 #[derive(Default)]

@@ -1,6 +1,6 @@
 use rand::prelude::*;
 
-use game_engine::*;
+use crate::game_engine::*;
 
 pub struct RandomBot {
     rng: ThreadRng,

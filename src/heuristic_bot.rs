@@ -4,8 +4,8 @@ use std::{
     collections::VecDeque,
 };
 
-use game_engine::*;
-use random_bot::get_non_suicide_random_action;
+use crate::game_engine::*;
+use crate::random_bot::get_non_suicide_random_action;
 
 /// The number of stats metrics.
 pub const NB_STATS: usize = 5;

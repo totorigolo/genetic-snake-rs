@@ -1,15 +1,7 @@
 #![allow(unused_imports)]
 
-extern crate colored;
-extern crate core;
-extern crate genevo;
-extern crate rand;
 #[macro_use]
 extern crate lazy_static;
-extern crate console;
-extern crate dialoguer;
-extern crate indicatif;
-extern crate rayon;
 
 use console::Style;
 use dialoguer::theme::ColorfulTheme;
@@ -21,12 +13,12 @@ mod interactive_bot;
 mod learning;
 mod random_bot;
 
-use heuristic_bot::HeuristicBot;
-use interactive_bot::InteractiveBot;
-use learning::learning;
-use random_bot::RandomBot;
+use crate::heuristic_bot::HeuristicBot;
+use crate::interactive_bot::InteractiveBot;
+use crate::learning::learning;
+use crate::random_bot::RandomBot;
 
-lazy_static!(
+lazy_static! {
     /// Global dialog theme
     pub static ref DIALOG_THEME: ColorfulTheme = {
         ColorfulTheme {
@@ -37,7 +29,7 @@ lazy_static!(
             ..ColorfulTheme::default()
         }
     };
-);
+}
 
 fn main() {
     // bench_tests::test_random_bot_simulation_speed(100_000, 1, true, false);

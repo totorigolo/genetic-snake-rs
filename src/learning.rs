@@ -13,11 +13,11 @@ use genevo::{
 
 use rayon::prelude::*;
 
-use game_engine::{GameResultWinner::*, *};
-use heuristic_bot::*;
-use interactive_bot::InteractiveBot;
-use random_bot::RandomBot;
-use DIALOG_THEME;
+use crate::game_engine::{GameResultWinner::*, *};
+use crate::heuristic_bot::*;
+use crate::interactive_bot::InteractiveBot;
+use crate::random_bot::RandomBot;
+use crate::DIALOG_THEME;
 
 /// The genotype is a vector of coefficients.
 pub type GeneticBotGenome = Weights;

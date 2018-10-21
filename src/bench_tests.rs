@@ -3,8 +3,8 @@
 ///! to spend there now.
 use std::time::{Duration, Instant};
 
-use game_engine::{Game, GameBoard, SnakeBot};
-use random_bot::RandomBot;
+use crate::game_engine::{Game, GameBoard, SnakeBot};
+use crate::random_bot::RandomBot;
 
 /// Test the performance with `nb_bots` random bots.
 pub fn test_random_bot_simulation_speed(
