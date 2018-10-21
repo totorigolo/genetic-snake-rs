@@ -286,12 +286,6 @@ impl<'a> Snake<'a> {
         board.set_tile_at_pos(tail_pos, Cell::SnakeTail(self.state.id));
         board.set_tile_at_pos(next_head_pos, Cell::SnakeHead(self.state.id));
     }
-
-    fn remove_snake_from_board(&self, board: &mut GameBoard) {
-        for position in &self.state.positions {
-            board.set_tile_at_pos(*position, Cell::Empty);
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -477,11 +471,16 @@ impl<'a> Game<'a> {
         }
 
         // Remove the dead snakes from the board
-        for ref mut snake in self.snakes.iter_mut().filter(|snake| snake.just_died) {
-            snake.remove_snake_from_board(&mut self.board);
-            snake.just_died = false;
-            snake.state.alive = false;
-        }
+        let dead_snakes_id = self.snakes
+            .iter_mut()
+            .filter(|snake| snake.just_died)
+            .map(|snake| {
+                snake.just_died = false;
+                snake.state.alive = false;
+                snake.state.id
+            })
+            .collect();
+        self.board.remove_dead_snakes(dead_snakes_id, &self.snakes);
 
         // Count the live snakes
         let nb_alive = self.snakes.iter().filter(|snake| snake.state.alive).count();
@@ -618,6 +617,34 @@ impl GameBoard {
             let pos = coord.to_pos();
             if self.is_pos_free_or_food(&pos) {
                 self.set_tile_at_pos(pos, Cell::Food);
+            }
+        }
+    }
+
+    fn remove_dead_snakes(&mut self, dead_snake_ids: Vec<SnakeId>, snakes: &Vec<Snake>) {
+        if !dead_snake_ids.is_empty() {
+            // Remove the dead
+            for ref snake in snakes.iter() {
+                if dead_snake_ids.contains(&snake.state.id) {
+                    for position in snake.state.positions.iter().cloned() {
+                        self.set_tile_at_pos(position, Cell::Empty);
+                    }
+                }
+            }
+            // Show the alive
+            for ref snake in snakes.iter() {
+                let id = snake.state.id.clone();
+                if !dead_snake_ids.contains(&snake.state.id) {
+                    for position in snake.state.positions.iter().cloned() {
+                        self.set_tile_at_pos(position, Cell::SnakeBody(id.clone()));
+                    }
+                    if let Some(head_pos) =snake.state.positions.front() {
+                        self.set_tile_at_pos(*head_pos, Cell::SnakeHead(id.clone()));
+                    }
+                    if let Some(tail_pos) =snake.state.positions.back() {
+                        self.set_tile_at_pos(*tail_pos, Cell::SnakeTail(id.clone()));
+                    }
+                }
             }
         }
     }
