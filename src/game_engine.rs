@@ -181,7 +181,7 @@ pub struct SnakeState {
 impl SnakeState {
     #[inline]
     pub fn get_head_pos(&self) -> Position {
-        *self.positions.front().unwrap()
+        *self.positions.front().expect("get_head_pos() called before the game started.")
     }
 
     #[inline]
@@ -294,7 +294,7 @@ impl<'a> Snake<'a> {
         }
 
         // Update the head and tail on the board
-        board.set_tile_at_pos(*self.state.positions.back().unwrap(),
+        board.set_tile_at_pos(*self.state.positions.back().expect("0-length Snake in execute_action()."),
                               Cell::SnakeTail(self.state.id));
         board.set_tile_at_pos(next_head_pos,
                               Cell::SnakeHead(self.state.id));
@@ -505,7 +505,7 @@ impl<'a> Game<'a> {
                     .filter(|snake| snake.state.alive)
                     .map(|snake| snake.state.id)
                     .next()
-                    .unwrap();
+                    .expect("Logic error: nb_alive == 1 but none found in self.snakes.");
                 self.results = Some(GameResults {
                     winner: Some(GameResultWinner::Winner(winner_id)),
                     steps: self.step + 1,
@@ -531,7 +531,7 @@ impl<'a> Game<'a> {
                 self.snakes.iter().filter(|snake| snake.state.alive).count() > 0) {
             self.step();
         }
-        self.results.clone().unwrap()
+        self.results.clone().expect("Logic error, no result in run_to_end().")
     }
 
     #[allow(dead_code)]

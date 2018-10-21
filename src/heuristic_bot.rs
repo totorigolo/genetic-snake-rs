@@ -1,15 +1,35 @@
 use std::collections::VecDeque;
 use std::cmp::Ordering;
 use std::cmp::min;
+use core::fmt;
 
 use game_engine::*;
 use random_bot::get_non_suicide_random_action;
 
+/// The number of stats metrics.
+pub const NB_STATS: usize = 5;
+
 /// The number of weights needed by the `HeuristicBot`.
-pub const NB_WEIGHTS: usize = 5 * 3;
+pub const NB_WEIGHTS: usize = NB_STATS * 3;
 
 /// The heuristic weights
 pub type Weights = Vec<f64>;
+
+pub struct PrettyWeights<'a>(pub &'a Weights);
+
+impl<'a> fmt::Display for PrettyWeights<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[\n");
+        for a in 0..3 {
+            write!(f, "   ");
+            for s in 0..NB_STATS {
+                write!(f, " {:9.5},", self.0[a * NB_STATS + s]);
+            }
+            write!(f, "\n");
+        }
+        write!(f, "]")
+    }
+}
 
 /// The maximum depth for the BFS => sight distance.
 /// Attention: It's used to normalize `Stats::accessible_area`.
@@ -64,7 +84,7 @@ impl<'a> SnakeBot for HeuristicBot<'a> {
                 let next_coord = next_coord_towards(&head_coord, &next_orientation);
 
                 let stats = compute_stats_from(&myself.id, &next_coord, board);
-                let offset = i * stats.len();
+                let offset = i * NB_STATS;
                 let weight =
                     stats.accessible_area * self.weights[offset + 0]
                         + stats.num_accessible_food * self.weights[offset + 1]
@@ -113,10 +133,6 @@ impl Stats {
             sum_dist_enemy_tails,
             min_dist_to_food,
         }
-    }
-
-    fn len(&self) -> usize {
-        5
     }
 }
 

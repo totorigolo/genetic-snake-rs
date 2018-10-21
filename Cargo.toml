@@ -18,3 +18,8 @@ colored = "*"
 lazy_static = "*"
 rayon = "*"
 indicatif = "*"
+console = "*"
+dialoguer = { git = "https://github.com/mitsuhiko/dialoguer" }
+
+[profile.release]
+debug = true
