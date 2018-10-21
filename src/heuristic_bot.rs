@@ -40,11 +40,12 @@ lazy_static! {
     /// Human-tuned good weights
     pub static ref GOOD_WEIGHTS: Weights = {
         #[cfg_attr(rustfmt, rustfmt_skip)]
-        vec![
+        let weights: [f64; NB_WEIGHTS] = [
             1., 0.8, 0.07, -0.1, -0.9,
             1., 0.8, 0.07, -0.1, -0.9,
             1., 0.8, 0.07, -0.1, -0.9,
-        ]
+        ];
+        weights.iter().cloned().collect()
     };
 }
 
