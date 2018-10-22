@@ -21,6 +21,7 @@ indicatif = "*"
 console = "*"
 dialoguer = { git = "https://github.com/mitsuhiko/dialoguer" }
 ctrlc = "*"
+chrono = "*"
 
 [profile.release]
 debug = true

@@ -6,7 +6,9 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
-    }
+    },
+    fs::OpenOptions,
+    io::Write
 };
 
 use rand::prelude::*;
@@ -24,11 +26,14 @@ use genevo::{
 
 use rayon::prelude::*;
 
+use chrono::prelude::*;
+
 use crate::game_engine::{GameResultWinner::*, *};
 use crate::heuristic_bot::*;
 use crate::interactive_bot::InteractiveBot;
 use crate::random_bot::RandomBot;
 use crate::DIALOG_THEME;
+
 
 /// The genotype is a vector of coefficients.
 pub type GeneticBotGenome = Weights;
@@ -235,6 +240,18 @@ fn learn_weights() -> Option<Weights> {
         }
     }).unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
 
+    // Open a file to dump the stats
+    let dt = Local::now();
+    let mut stats_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(format!("stats_dump_{}.txt", dt.format("%Y-%m-%d_%H:%M:%S")));
+    if let Ok(ref mut file) = stats_file {
+        writeln!(file, "[");
+    } else if let Err(ref e) = stats_file {
+        println!("Unable to open a file to dump data: {}.", e);
+    }
+
     // Run the learning
     let mut best_weights = None;
     while !learning_stopped.load(Ordering::SeqCst) {
@@ -258,6 +275,20 @@ fn learn_weights() -> Option<Weights> {
                         PrettyWeights(&best_solution.solution.genome)
                     );
                     max_fitness_bar.set_position(best_solution.solution.fitness as u64);
+
+                    if let Ok(ref mut file) = stats_file {
+                        let mut line = String::with_capacity(30 + 10 * params.population_size);
+
+                        let g = step.iteration;
+                        for f in evaluated_population.fitness_values().iter() {
+                            line.push_str(&format!("({},{}),", g, f));
+                        }
+                        if let Err(e) = writeln!(file, "{}", line) {
+                            eprintln!("Couldn't dump stats to file: {}", e);
+                        }
+
+                        file.sync_all().unwrap();
+                    }
 
                     if learning_stopped.load(Ordering::SeqCst) {
                         best_weights = Some(best_solution.solution.genome.clone());
@@ -300,6 +331,11 @@ fn learn_weights() -> Option<Weights> {
     // Disable the Ctrl+C handler
     // TODO: Add a global handler
     handler_enabled.store(false, Ordering::SeqCst);
+
+    // Add the closing bracket to the data (Python format)
+    if let Ok(ref mut file) = stats_file {
+        writeln!(file, "]");
+    }
 
     return best_weights;
 }
