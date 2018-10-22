@@ -3,6 +3,13 @@
 #[macro_use]
 extern crate lazy_static;
 
+use std::{
+    time::{
+        Duration, Instant,
+    },
+    thread,
+};
+
 use console::Style;
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input, Select};
 
@@ -64,10 +71,15 @@ lazy_static! {
     /// Weights learned with the GA, which got 38/40
     pub static ref GA_WEIGHTS: Weights = {
         #[cfg_attr(rustfmt, rustfmt_skip)]
+        // let weights: [f64; NB_WEIGHTS] = [
+        //     0.97500, -0.64724, -0.24451, -0.30122, -0.25775,
+        //     0.97500, -0.62002, -0.64823, -0.23038, 0.06820,
+        //     1.00000, -0.64373, -0.08643, -0.33367, -0.38482,
+        // ];
         let weights: [f64; NB_WEIGHTS] = [
-            0.97500, -0.64724, -0.24451, -0.30122, -0.25775,
-            0.97500, -0.62002, -0.64823, -0.23038, 0.06820,
-            1.00000, -0.64373, -0.08643, -0.33367, -0.38482,
+            0.95000,   0.62497,  -0.04825,  -0.49258,  -0.17677,
+            0.97500,   0.42442,  -0.63253,  -0.16685,  -0.05459,
+            0.97500,  -0.57496,  -0.10656,  -0.34064,  -0.27314,
         ];
         weights.iter().cloned().collect()
     };
@@ -138,23 +150,24 @@ fn prompt_which_bot(msg: &str) -> WhichBot {
     }
 }
 
+/// TODO: Move all the simulation stuff in a separate module
 fn start_match(mut bots: Vec<Box<dyn SnakeBot>>) {
-    loop {
-        let mut game = Game::new();
+    let mut game = Game::new();
 
-        for id in 0..bots.len() {
-            game.add_snake(id as SnakeId, bots.swap_remove(id));
-        }
-
-        let results = game
-            .continue_simulation_if_known_winner(false)
-            .initialize()
-            .print()
-            .after_each_step(move |board: &GameBoard| board.print())
-            .run_to_end();
-
-        println!("{}", results);
+    for id in (0..bots.len()).rev() {
+        let idx = bots.len() - 1;
+        game.add_snake(id as SnakeId, bots.swap_remove(idx));
     }
+
+    let results = game
+        .continue_simulation_if_known_winner(false)
+        .initialize()
+        .print()
+        .after_each_step(move |board: &GameBoard| board.print())
+        .after_each_step(|_| thread::sleep(Duration::from_millis(200)))
+        .run_to_end();
+
+    println!("{}", results);
 }
 
 fn speed_test() {

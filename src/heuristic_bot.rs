@@ -240,7 +240,11 @@ pub fn compute_stats_from(
     }
 
     // dists are "inf"=1 by default
-    let max_sum_dist_enemy = (board.nb_alive_snakes - 1) as f64 * board_diag_size;
+    let max_sum_dist_enemy = if board.nb_alive_snakes > 1 {
+        (board.nb_alive_snakes - 1) as f64 * board_diag_size
+    } else {
+        1_f64
+    };
     if sum_dist_enemy_heads == 0. {
         sum_dist_enemy_heads = max_sum_dist_enemy;
     }

@@ -24,6 +24,7 @@ impl fmt::Display for Cell {
             1 => s.red(),
             2 => s.blue(),
             3 => s.cyan(),
+            4 => s.yellow(),
             _ => s.white(),
         };
 
@@ -650,7 +651,7 @@ impl GameBoard {
             // Show the alive
             for ref snake in snakes.iter() {
                 let id = snake.state.id.clone();
-                if !dead_snake_ids.contains(&snake.state.id) {
+                if snake.state.alive {
                     for position in snake.state.positions.iter().cloned() {
                         self.set_tile_at_pos(position, Cell::SnakeBody(id.clone()));
                     }

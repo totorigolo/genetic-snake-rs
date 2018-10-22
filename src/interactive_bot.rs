@@ -11,6 +11,7 @@ pub struct InteractiveBot;
 
 impl SnakeBot for InteractiveBot {
     fn get_next_action(&mut self, _: &SnakeState, _: &GameBoard) -> Action {
+        // TODO: Colorize this prompt with the same color than the snakes
         let choice = Select::with_theme(&*DIALOG_THEME)
             .with_prompt("What is your next action?")
             .default(1)
