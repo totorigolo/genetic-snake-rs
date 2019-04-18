@@ -19,6 +19,7 @@ go to `src/learning.rs`.
 To see what are the heuristic values and how they are
 computed, go to `src/heuristic_bot.rs`.
 
+[![asciicast](https://asciinema.org/a/241704.svg)](https://asciinema.org/a/241704)
 
 # Usage
 
