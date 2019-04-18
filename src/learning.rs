@@ -58,8 +58,8 @@ struct Parameters {
 impl Default for Parameters {
     fn default() -> Self {
         Parameters {
-            population_size: 100,
-            generation_limit: 1000,
+            population_size: 250,
+            generation_limit: 10_000,
             num_individuals_per_parents: 2,
             selection_ratio: 0.7,
             num_crossover_points: 1,
@@ -176,8 +176,8 @@ fn learn_weights() -> Option<Weights> {
                 params.mutation_rate,
                 params.mutation_range,
                 params.mutation_precision,
-                GENOME_MIN_VALUE,
-                GENOME_MAX_VALUE,
+                GENOME_MIN_VALUE * 10_f64,
+                GENOME_MAX_VALUE * 10_f64,
             ))
             .with_reinsertion(ElitistReinserter::new(
                 fitness_calc.clone(),
