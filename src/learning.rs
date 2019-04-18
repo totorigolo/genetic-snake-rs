@@ -247,7 +247,7 @@ fn learn_weights() -> Option<Weights> {
         .append(true)
         .open(format!("stats_dump_{}.txt", dt.format("%Y-%m-%d_%H:%M:%S")));
     if let Ok(ref mut file) = stats_file {
-        writeln!(file, "[");
+        writeln!(file, "[").map(|_| ()).unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
     } else if let Err(ref e) = stats_file {
         println!("Unable to open a file to dump data: {}.", e);
     }
@@ -334,7 +334,7 @@ fn learn_weights() -> Option<Weights> {
 
     // Add the closing bracket to the data (Python format)
     if let Ok(ref mut file) = stats_file {
-        writeln!(file, "]");
+        writeln!(file, "]").map(|_| ()).unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
     }
 
     return best_weights;

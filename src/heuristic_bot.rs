@@ -20,13 +20,13 @@ pub struct PrettyWeights<'a>(pub &'a Weights);
 
 impl<'a> fmt::Display for PrettyWeights<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[\n");
+        write!(f, "[\n")?;
         for a in 0..3 {
-            write!(f, "   ");
+            write!(f, "   ")?;
             for s in 0..NB_STATS {
-                write!(f, " {:9.5},", self.0[a * NB_STATS + s]);
+                write!(f, " {:9.5},", self.0[a * NB_STATS + s])?;
             }
-            write!(f, "\n");
+            write!(f, "\n")?;
         }
         write!(f, "]")
     }
