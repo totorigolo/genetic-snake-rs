@@ -23,27 +23,15 @@ computed, go to `src/heuristic_bot.rs`.
 
 # Usage
 
-To run `genetic-snake-rust`, you need (as for now) the
-nightly toolchain, because I use the 2018 Edition.
+To run `genetic-snake-rust`, a recent stable Rust should work.
 
 The easiest way to get Rust is via
 [`rustup`](https://www.rust-lang.org/en-US/install.html).
 
-```
-rustup install nightly
-```
-
 Then, simply run:
 
 ```
-cargo +nightly run --release
-```
-
-If you don't want to write `+nightly`, you can change
-your default toolchain with:
-
-```
-rustup default nightly
+cargo run --release
 ```
 
 # License & Contributing
