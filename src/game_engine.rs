@@ -70,7 +70,7 @@ impl Coordinate {
 
     #[inline]
     pub fn is_out_of_bounds(&self) -> bool {
-        return self.x < 0 || self.x >= BOARD_WIDTH || self.y < 0 || self.y >= BOARD_HEIGHT;
+        self.x < 0 || self.x >= BOARD_WIDTH || self.y < 0 || self.y >= BOARD_HEIGHT
     }
 }
 
@@ -176,7 +176,7 @@ impl SnakeState {
 
 pub struct Snake<'a> {
     pub state: SnakeState,
-    bot: Box<SnakeBot + 'a>,
+    bot: Box<dyn SnakeBot + 'a>,
     just_died: bool,
 
     /// The field gets decreased by one at each step. When it reaches zero,
@@ -188,7 +188,7 @@ impl<'a> Snake<'a> {
     pub const GROWTH_RATE: i32 = 3;
     pub const POSITIONS_VEC_INITIAL_CAPACITY: usize = 64;
 
-    fn new(id: u32, bot: Box<SnakeBot + 'a>) -> Self {
+    fn new(id: u32, bot: Box<dyn SnakeBot + 'a>) -> Self {
         Snake {
             state: SnakeState {
                 id,
@@ -252,7 +252,7 @@ impl<'a> Snake<'a> {
         let next_head_pos = next_head_coord.to_pos();
 
         // Remember if the next position is food
-        let next_pos_type = board.get_tile_at_pos(&next_head_pos).clone();
+        let next_pos_type = board.get_tile_at_pos(next_head_pos);
         let food = next_pos_type == Cell::Food;
 
         // Check the growth rate
@@ -322,8 +322,8 @@ impl fmt::Display for GameResults {
 pub struct Game<'a> {
     board: GameBoard,
     snakes: Vec<Snake<'a>>,
-    before_each_step: Vec<Box<Fn(&GameBoard)>>,
-    after_each_step: Vec<Box<Fn(&GameBoard)>>,
+    before_each_step: Vec<Box<dyn Fn(&GameBoard)>>,
+    after_each_step: Vec<Box<dyn Fn(&GameBoard)>>,
 
     initialized: bool,
     step: u32,
@@ -355,7 +355,7 @@ impl<'a> Game<'a> {
         game
     }
 
-    pub fn add_snake(&mut self, id: SnakeId, snake_bot: Box<SnakeBot + 'a>) -> &mut Self {
+    pub fn add_snake(&mut self, id: SnakeId, snake_bot: Box<dyn SnakeBot + 'a>) -> &mut Self {
         if self
             .snakes
             .iter()
@@ -410,7 +410,7 @@ impl<'a> Game<'a> {
                 }
 
                 // Check that the cell is free
-                match self.board.get_tile_at_pos(&p) {
+                match self.board.get_tile_at_pos(p) {
                     Cell::Empty | Cell::Food => {
                         pos = Some(p);
                         break;
@@ -452,7 +452,6 @@ impl<'a> Game<'a> {
             .snakes
             .iter()
             .filter(|snake| snake.state.alive)
-            .map(|snake| snake.state.id)
             .count();
 
         // Update the board before calling the bots
@@ -460,7 +459,7 @@ impl<'a> Game<'a> {
 
         // Take the snakes' next actions
         let mut actions = vec![];
-        for ref mut snake in self.snakes.iter_mut().filter(|snake| snake.state.alive) {
+        for snake in self.snakes.iter_mut().filter(|snake| snake.state.alive) {
             actions.push(snake.get_next_action(&self.board));
         }
 
@@ -477,9 +476,9 @@ impl<'a> Game<'a> {
         }
 
         // Check head collisions
-        for ref mut snake in self.snakes.iter_mut().filter(|snake| snake.state.alive) {
+        for snake in self.snakes.iter_mut().filter(|snake| snake.state.alive) {
             if let Some(head) = snake.state.positions.front() {
-                if let Cell::SnakeHead(id) = self.board.get_tile_at_pos(&head) {
+                if let Cell::SnakeHead(id) = self.board.get_tile_at_pos(*head) {
                     if id != snake.state.id {
                         snake.just_died = true;
                     }
@@ -632,16 +631,16 @@ impl GameBoard {
             let y = self.rng.gen_range(0, BOARD_HEIGHT);
             let coord = Coordinate { x, y };
             let pos = coord.to_pos();
-            if self.is_pos_free_or_food(&pos) {
+            if self.is_pos_free_or_food(pos) {
                 self.set_tile_at_pos(pos, Cell::Food);
             }
         }
     }
 
-    fn remove_dead_snakes(&mut self, dead_snake_ids: Vec<SnakeId>, snakes: &Vec<Snake>) {
+    fn remove_dead_snakes(&mut self, dead_snake_ids: Vec<SnakeId>, snakes: &[Snake]) {
         if !dead_snake_ids.is_empty() {
             // Remove the dead
-            for ref snake in snakes.iter() {
+            for snake in snakes.iter() {
                 if dead_snake_ids.contains(&snake.state.id) {
                     for position in snake.state.positions.iter().cloned() {
                         self.set_tile_at_pos(position, Cell::Empty);
@@ -649,17 +648,17 @@ impl GameBoard {
                 }
             }
             // Show the alive
-            for ref snake in snakes.iter() {
-                let id = snake.state.id.clone();
+            for snake in snakes.iter() {
+                let id = snake.state.id;
                 if snake.state.alive {
                     for position in snake.state.positions.iter().cloned() {
-                        self.set_tile_at_pos(position, Cell::SnakeBody(id.clone()));
+                        self.set_tile_at_pos(position, Cell::SnakeBody(id));
                     }
                     if let Some(head_pos) =snake.state.positions.front() {
-                        self.set_tile_at_pos(*head_pos, Cell::SnakeHead(id.clone()));
+                        self.set_tile_at_pos(*head_pos, Cell::SnakeHead(id));
                     }
                     if let Some(tail_pos) =snake.state.positions.back() {
-                        self.set_tile_at_pos(*tail_pos, Cell::SnakeTail(id.clone()));
+                        self.set_tile_at_pos(*tail_pos, Cell::SnakeTail(id));
                     }
                 }
             }
@@ -670,12 +669,12 @@ impl GameBoard {
         if coord.is_out_of_bounds() {
             return Cell::Wall;
         }
-        self.get_tile_at_pos(&coord.to_pos())
+        self.get_tile_at_pos(coord.to_pos())
     }
 
-    pub fn get_tile_at_pos(&self, pos: &Position) -> Cell {
-        // assert!(*pos >= 0 && *pos < BOARD_WIDTH * BOARD_HEIGHT);
-        self.cells[*pos as usize]
+    pub fn get_tile_at_pos(&self, pos: Position) -> Cell {
+        // assert!(pos >= 0 && *pos < BOARD_WIDTH * BOARD_HEIGHT);
+        self.cells[pos as usize]
     }
 
     #[allow(dead_code)]
@@ -716,7 +715,7 @@ impl GameBoard {
 
     #[inline]
     #[allow(dead_code)]
-    pub fn is_pos_free_or_food(&self, pos: &Position) -> bool {
+    pub fn is_pos_free_or_food(&self, pos: Position) -> bool {
         match self.get_tile_at_pos(pos) {
             Cell::Empty | Cell::Food => true,
             _ => false,

@@ -14,19 +14,20 @@ pub const NB_STATS: usize = 5;
 pub const NB_WEIGHTS: usize = NB_STATS * 3;
 
 /// The heuristic weights
+pub type Weight = f64;
 pub type Weights = Vec<f64>;
 
 pub struct PrettyWeights<'a>(pub &'a Weights);
 
 impl<'a> fmt::Display for PrettyWeights<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[\n")?;
+        writeln!(f, "[")?;
         for a in 0..3 {
             write!(f, "   ")?;
             for s in 0..NB_STATS {
                 write!(f, " {:9.5},", self.0[a * NB_STATS + s])?;
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
         write!(f, "]")
     }
@@ -45,18 +46,18 @@ lazy_static! {
             1., 0.8, 0.07, -0.1, -0.9,
             1., 0.8, 0.07, -0.1, -0.9,
         ];
-        weights.iter().cloned().collect()
+        weights.to_vec()
     };
 }
 
 pub struct HeuristicBot<'a> {
     /// This is a reference to prevent an unneeded copy during
     /// the genetic algorithm learning process.
-    weights: &'a Weights,
+    weights: &'a [Weight],
 }
 
 impl<'a> HeuristicBot<'a> {
-    pub fn new(weights: &'a Weights) -> Self {
+    pub fn new(weights: &'a [Weight]) -> Self {
         assert_eq!(
             weights.len(),
             NB_WEIGHTS,
@@ -89,9 +90,9 @@ impl<'a> SnakeBot for HeuristicBot<'a> {
                 let next_orientation = next_orientation(current_orientation, &action);
                 let next_coord = next_coord_towards(&head_coord, &next_orientation);
 
-                let stats = compute_stats_from(&myself.id, &next_coord, board);
+                let stats = compute_stats_from(myself.id, &next_coord, board);
                 let offset = i * NB_STATS;
-                let weight = stats.accessible_area * self.weights[offset + 0]
+                let weight = stats.accessible_area * self.weights[offset]
                     + stats.ratio_accessible_food * self.weights[offset + 1]
                     + stats.sum_dist_enemy_heads * self.weights[offset + 2]
                     + stats.sum_dist_enemy_tails * self.weights[offset + 3]
@@ -108,7 +109,7 @@ impl<'a> SnakeBot for HeuristicBot<'a> {
 
                 (action, weight)
             })
-            .max_by_key(|(_, weight)| NonNan::new(weight.clone()))
+            .max_by_key(|(_, weight)| NonNan::new(*weight))
             .unwrap()
             .0
             .clone()
@@ -144,7 +145,7 @@ impl Stats {
 
 /// `coord` is an Option because we don't forbid suicide.
 pub fn compute_stats_from(
-    snake_id: &SnakeId,
+    snake_id: SnakeId,
     coord: &Option<Coordinate>,
     board: &GameBoard,
 ) -> Stats {
@@ -193,7 +194,7 @@ pub fn compute_stats_from(
         }
 
         // Update the stats depending on the current free-tile type
-        match board.get_tile_at_pos(&pos) {
+        match board.get_tile_at_pos(pos) {
             Cell::Empty => accessible_area += 1.,
             Cell::Food => {
                 accessible_area += 1.;
@@ -216,14 +217,14 @@ pub fn compute_stats_from(
                 let pos = coord.to_pos();
                 if !coord.is_out_of_bounds() && !added[pos as usize] {
                     // Update the stats depending on the neighbor non-free-tile type
-                    match board.get_tile_at_pos(&pos) {
+                    match board.get_tile_at_pos(pos) {
                         Cell::SnakeHead(id) => {
-                            if id != *snake_id {
+                            if id != snake_id {
                                 sum_dist_enemy_heads += dist as f64;
                             }
                         }
                         Cell::SnakeTail(id) => {
-                            if id != *snake_id {
+                            if id != snake_id {
                                 sum_dist_enemy_tails += dist as f64;
                             }
                         }
@@ -254,13 +255,13 @@ pub fn compute_stats_from(
 
     // Return normalized stats
     let nb_free_cells = board.nb_free_cells;
-    return Stats::new(
+    Stats::new(
         accessible_area as f64 / nb_free_cells as f64,
         num_accessible_food as f64 / nb_free_cells as f64,
         sum_dist_enemy_heads as f64 / max_sum_dist_enemy,
         sum_dist_enemy_tails as f64 / max_sum_dist_enemy,
         min_dist_to_food as f64 / board_diag_size,
-    );
+    )
 }
 
 #[derive(PartialEq, PartialOrd)]
