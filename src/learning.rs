@@ -135,6 +135,62 @@ pub fn learning() {
     }
 }
 
+/// Add a Ctrl+C handler (if the feature is enabled)
+/// 
+/// Returns: (handler_enabled, ctrlc_interrupted, learning_stopped)
+#[cfg(feature = "ctrlc")]
+fn install_ctrlc_handler() -> (Arc<AtomicBool>, Arc<AtomicBool>, Arc<AtomicBool>) {
+    let handler_enabled = Arc::new(AtomicBool::new(true));
+    let handler_enabled_inner = handler_enabled.clone();
+    let ctrlc_interrupted = Arc::new(AtomicBool::new(false));
+    let ctrlc_interrupted_inner = ctrlc_interrupted.clone();
+    let learning_stopped = Arc::new(AtomicBool::new(false));
+    let learning_stopped_inner = learning_stopped.clone();
+    ctrlc::set_handler(move || {
+        if handler_enabled_inner.load(Ordering::SeqCst) {
+            ctrlc_interrupted_inner.store(true, Ordering::SeqCst);
+
+            // Ask the reason of the Ctrl+C
+            let ctrlc_choice = Select::with_theme(&*DIALOG_THEME)
+                .with_prompt(" Ctrl+C received, what do you want to do?")
+                .default(0)
+                .item("oops, nothing")
+                .item("stop the learning")
+                .item("quit")
+                .interact()
+                .unwrap_or(2);
+
+            // Execute the action
+            match ctrlc_choice {
+                0 => {}
+                1 => {
+                    learning_stopped_inner.store(true, Ordering::SeqCst);
+                }
+                2 => {
+                    ::std::process::exit(0);
+                }
+                _ => unreachable!()
+            }
+
+            ctrlc_interrupted_inner.store(false, Ordering::SeqCst);
+        }
+    }).unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
+
+    (handler_enabled, ctrlc_interrupted, learning_stopped)
+}
+
+/// No-op (if the feature is disabled)
+/// 
+/// Returns: (handler_enabled, ctrlc_interrupted, learning_stopped)
+#[cfg(not(feature = "ctrlc"))]
+fn install_ctrlc_handler() -> (Arc<AtomicBool>, Arc<AtomicBool>, Arc<AtomicBool>) {
+    let handler_enabled = Arc::new(AtomicBool::new(false));
+    let ctrlc_interrupted = Arc::new(AtomicBool::new(false));
+    let learning_stopped = Arc::new(AtomicBool::new(false));
+
+    (handler_enabled, ctrlc_interrupted, learning_stopped)
+}
+
 fn learn_weights() -> Option<Weights> {
     let params = Parameters::default();
 
@@ -203,42 +259,8 @@ fn learn_weights() -> Option<Weights> {
             .progress_chars("#>-"),
     );
 
-    // Add a Ctrl+C handler
-    let handler_enabled = Arc::new(AtomicBool::new(true));
-    let handler_enabled_inner = handler_enabled.clone();
-    let ctrlc_interrupted = Arc::new(AtomicBool::new(false));
-    let ctrlc_interrupted_inner = ctrlc_interrupted.clone();
-    let learning_stopped = Arc::new(AtomicBool::new(false));
-    let learning_stopped_inner = learning_stopped.clone();
-    ctrlc::set_handler(move || {
-        if handler_enabled_inner.load(Ordering::SeqCst) {
-            ctrlc_interrupted_inner.store(true, Ordering::SeqCst);
-
-            // Ask the reason of the Ctrl+C
-            let ctrlc_choice = Select::with_theme(&*DIALOG_THEME)
-                .with_prompt(" Ctrl+C received, what do you want to do?")
-                .default(0)
-                .item("oops, nothing")
-                .item("stop the learning")
-                .item("quit")
-                .interact()
-                .unwrap_or(2);
-
-            // Execute the action
-            match ctrlc_choice {
-                0 => {}
-                1 => {
-                    learning_stopped_inner.store(true, Ordering::SeqCst);
-                }
-                2 => {
-                    ::std::process::exit(0);
-                }
-                _ => unreachable!()
-            }
-
-            ctrlc_interrupted_inner.store(false, Ordering::SeqCst);
-        }
-    }).unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
+    // Add a Ctrl+C handler (if the feature is enabled)
+    let (handler_enabled, ctrlc_interrupted, learning_stopped) = install_ctrlc_handler();
 
     // Open a file to dump the stats
     let dt = Local::now();
@@ -337,7 +359,7 @@ fn learn_weights() -> Option<Weights> {
         writeln!(file, "]").map(|_| ()).unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
     }
 
-    return best_weights;
+    best_weights
 }
 
 fn test_weights(weights: Weights) {
