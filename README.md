@@ -1,4 +1,4 @@
-# genetic-snake-rust
+# genetic-snake-rs
 
 Teaching a bot to play Snake, without telling it anything
 about the rules, using a genetic algorithm.
@@ -23,7 +23,7 @@ computed, go to `src/heuristic_bot.rs`.
 
 # Usage
 
-To run `genetic-snake-rust`, a recent stable Rust should work.
+To run `genetic-snake-rs`, a recent stable Rust should work.
 
 The easiest way to get Rust is via
 [`rustup`](https://www.rust-lang.org/en-US/install.html).
