@@ -1,14 +1,12 @@
 use std::{
-    time::{
-        Duration, Instant,
+    fs::OpenOptions,
+    io::Write,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
     },
     thread,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    fs::OpenOptions,
-    io::Write
+    time::{Duration, Instant},
 };
 
 use rand::prelude::*;
@@ -33,7 +31,6 @@ use crate::heuristic_bot::*;
 use crate::interactive_bot::InteractiveBot;
 use crate::random_bot::RandomBot;
 use crate::DIALOG_THEME;
-
 
 /// The genotype is a vector of coefficients.
 pub type GeneticBotGenome = Weights;
@@ -136,7 +133,7 @@ pub fn learning() {
 }
 
 /// Add a Ctrl+C handler (if the feature is enabled)
-/// 
+///
 /// Returns: (handler_enabled, ctrlc_interrupted, learning_stopped)
 #[cfg(feature = "ctrlc")]
 fn install_ctrlc_handler() -> (Arc<AtomicBool>, Arc<AtomicBool>, Arc<AtomicBool>) {
@@ -169,18 +166,19 @@ fn install_ctrlc_handler() -> (Arc<AtomicBool>, Arc<AtomicBool>, Arc<AtomicBool>
                 2 => {
                     ::std::process::exit(0);
                 }
-                _ => unreachable!()
+                _ => unreachable!(),
             }
 
             ctrlc_interrupted_inner.store(false, Ordering::SeqCst);
         }
-    }).unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
+    })
+    .unwrap_or_else(|_| eprintln!("Error setting Ctrl-C handler."));
 
     (handler_enabled, ctrlc_interrupted, learning_stopped)
 }
 
 /// No-op (if the feature is disabled)
-/// 
+///
 /// Returns: (handler_enabled, ctrlc_interrupted, learning_stopped)
 #[cfg(not(feature = "ctrlc"))]
 fn install_ctrlc_handler() -> (Arc<AtomicBool>, Arc<AtomicBool>, Arc<AtomicBool>) {
@@ -236,7 +234,7 @@ fn learn_weights() -> Option<Weights> {
                 GENOME_MAX_VALUE * 10_f64,
             ))
             .with_reinsertion(ElitistReinserter::new(
-                fitness_calc.clone(),
+                fitness_calc,
                 true,
                 params.reinsertion_ratio,
             ))
@@ -269,7 +267,9 @@ fn learn_weights() -> Option<Weights> {
         .append(true)
         .open(format!("stats_dump_{}.txt", dt.format("%Y-%m-%d_%H:%M:%S")));
     if let Ok(ref mut file) = stats_file {
-        writeln!(file, "[").map(|_| ()).unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
+        writeln!(file, "[")
+            .map(|_| ())
+            .unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
     } else if let Err(ref e) = stats_file {
         println!("Unable to open a file to dump data: {}.", e);
     }
@@ -339,7 +339,7 @@ fn learn_weights() -> Option<Weights> {
                     PrettyWeights(&best_solution.solution.genome)
                 );
 
-                best_weights = Some(best_solution.solution.genome.clone());
+                best_weights = Some(best_solution.solution.genome);
                 break;
             }
             Err(error) => {
@@ -356,7 +356,9 @@ fn learn_weights() -> Option<Weights> {
 
     // Add the closing bracket to the data (Python format)
     if let Ok(ref mut file) = stats_file {
-        writeln!(file, "]").map(|_| ()).unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
+        writeln!(file, "]")
+            .map(|_| ())
+            .unwrap_or_else(|e| eprintln!("Save failed: {:?}", e));
     }
 
     best_weights
@@ -432,19 +434,17 @@ fn test_weights(weights: Weights) {
                     4 => println!("{}", format!("You won in {} moves!", results.steps).green()),
                     _ => unreachable!(),
                 }
+            } else if bot_choice == 4 {
+                // Human player, different message
+                println!(
+                    "{}",
+                    format!("The learned bot beat you in {} moves!", results.steps).red()
+                );
             } else {
-                if bot_choice == 4 {
-                    // Human player, different message
-                    println!(
-                        "{}",
-                        format!("The learned bot beat you in {} moves!", results.steps).red()
-                    );
-                } else {
-                    println!(
-                        "{}",
-                        format!("The learned bot won in {} moves!", results.steps).green()
-                    );
-                }
+                println!(
+                    "{}",
+                    format!("The learned bot won in {} moves!", results.steps).green()
+                );
             }
         } else {
             println!(

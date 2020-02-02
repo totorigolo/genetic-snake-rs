@@ -4,10 +4,8 @@
 extern crate lazy_static;
 
 use std::{
-    time::{
-        Duration, Instant,
-    },
     thread,
+    time::{Duration, Instant},
 };
 
 use console::Style;
@@ -20,11 +18,11 @@ mod interactive_bot;
 mod learning;
 mod random_bot;
 
+use crate::game_engine::{Game, GameBoard, SnakeBot, SnakeId, BOARD_HEIGHT};
 use crate::heuristic_bot::{HeuristicBot, Weights, NB_WEIGHTS};
 use crate::interactive_bot::InteractiveBot;
 use crate::learning::learning;
 use crate::random_bot::RandomBot;
-use crate::game_engine::{SnakeId, SnakeBot, Game, GameBoard, BOARD_HEIGHT};
 
 lazy_static! {
     /// Global dialog theme
@@ -57,11 +55,11 @@ fn main() {
             0 => {
                 learning();
                 break;
-            },
+            }
             1 => human_vs_good_bot(),
             2 => start_match(prompt_and_create_bots()),
             3 => speed_test(),
-            _ => break
+            _ => break,
         }
         println!();
     }
@@ -89,7 +87,7 @@ lazy_static! {
             1.07254,  -0.13452,  -0.45125,  -0.31519,   0.01470,
             1.03946,   0.38929,   0.01750,  -0.55665,  -0.18053,
         ];
-        weights.iter().cloned().collect()
+        weights.to_vec()
     };
 }
 
@@ -100,9 +98,7 @@ fn human_vs_good_bot() {
         .add_snake(1, Box::from(InteractiveBot::default()))
         .initialize()
         .print()
-        .after_each_step(move |board: &GameBoard| {
-            board.print()
-        })
+        .after_each_step(move |board: &GameBoard| board.print())
         .run_to_end();
     println!("{}", results);
 }
@@ -149,7 +145,8 @@ fn prompt_which_bot(msg: &str) -> Bot {
         .item("best bot found with genetic algorithm")
         .item("human")
         .interact()
-        .unwrap_or(0) {
+        .unwrap_or(0)
+    {
         0 => Bot::Random,
         1 => Bot::Heuristic,
         2 => Bot::Best,
@@ -197,7 +194,8 @@ fn speed_test() {
         .item("random bot")
         .item("human-tuned heuristic bot")
         .interact()
-        .unwrap_or(0) {
+        .unwrap_or(0)
+    {
         0 => Bot::Random,
         1 => Bot::Heuristic,
         _ => unreachable!(),
@@ -217,8 +215,13 @@ fn speed_test() {
             test_simulation_speed::<RandomBot>(nb_simulations, nb_bots, continue_if_winner, print);
         }
         Bot::Heuristic => {
-            test_simulation_speed::<HeuristicBot>(nb_simulations, nb_bots, continue_if_winner, print);
+            test_simulation_speed::<HeuristicBot>(
+                nb_simulations,
+                nb_bots,
+                continue_if_winner,
+                print,
+            );
         }
-        _ => unreachable!()
+        _ => unreachable!(),
     };
 }

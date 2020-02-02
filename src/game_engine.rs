@@ -224,12 +224,11 @@ impl<'a> Snake<'a> {
 
         let current_orientation: Orientation = self.state.current_orientation.clone();
         let next_orientation = next_orientation(&current_orientation, &action);
-        let current_head_pos = self
+        let current_head_pos = *self
             .state
             .positions
             .front()
-            .expect("The game hasn't been initialized.")
-            .clone();
+            .expect("The game hasn't been initialized.");
         let current_head_coord = Coordinate::from_pos(current_head_pos);
 
         // Determine the next head coordinate
@@ -305,17 +304,21 @@ pub struct GameResults {
 
 impl fmt::Display for GameResults {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match self.winner {
-            Some(GameResultWinner::Winner(id)) => {
-                format!("Player {} won! ({} moves)", id, self.steps).green()
+        write!(
+            f,
+            "{}",
+            match self.winner {
+                Some(GameResultWinner::Winner(id)) => {
+                    format!("Player {} won! ({} moves)", id, self.steps).green()
+                }
+                Some(GameResultWinner::Draw) => {
+                    format!("It's a draw! ({} moves)", self.steps).yellow()
+                }
+                None => {
+                    format!("The snake died after {} moves.", self.steps).blue()
+                }
             }
-            Some(GameResultWinner::Draw) => {
-                format!("It's a draw! ({} moves)", self.steps).yellow()
-            }
-            None => {
-                format!("The snake died after {} moves.", self.steps).blue()
-            }
-        })
+        )
     }
 }
 
@@ -448,11 +451,7 @@ impl<'a> Game<'a> {
         }
 
         // Remember which snakes are still alive
-        let prev_nb_alive = self
-            .snakes
-            .iter()
-            .filter(|snake| snake.state.alive)
-            .count();
+        let prev_nb_alive = self.snakes.iter().filter(|snake| snake.state.alive).count();
 
         // Update the board before calling the bots
         self.board.nb_alive_snakes = prev_nb_alive;
@@ -487,7 +486,8 @@ impl<'a> Game<'a> {
         }
 
         // Remove the dead snakes from the board
-        let dead_snakes_id = self.snakes
+        let dead_snakes_id = self
+            .snakes
             .iter_mut()
             .filter(|snake| snake.just_died)
             .map(|snake| {
@@ -503,17 +503,18 @@ impl<'a> Game<'a> {
 
         // Verify if win/loose/draw
         if self.results.is_none() {
-            // * Draw/end: all die
+            // Draw/end: all die
             if prev_nb_alive > 0 && nb_alive == 0 {
                 self.results = Some(GameResults {
-                    winner: match self.snakes.len() > 1 {
-                        true => Some(GameResultWinner::Draw),
-                        false => None, // solo, no winner
+                    winner: if self.snakes.len() > 1 {
+                        Some(GameResultWinner::Draw)
+                    } else {
+                        None // solo, no winner
                     },
                     steps: self.step + 1,
                 });
             }
-            // * Winner: last alive, >1 snake total
+            // Winner: last alive, >1 snake total
             if prev_nb_alive > 0 && nb_alive == 1 && self.snakes.len() > 1 {
                 let winner_id: SnakeId = self
                     .snakes
@@ -654,10 +655,10 @@ impl GameBoard {
                     for position in snake.state.positions.iter().cloned() {
                         self.set_tile_at_pos(position, Cell::SnakeBody(id));
                     }
-                    if let Some(head_pos) =snake.state.positions.front() {
+                    if let Some(head_pos) = snake.state.positions.front() {
                         self.set_tile_at_pos(*head_pos, Cell::SnakeHead(id));
                     }
-                    if let Some(tail_pos) =snake.state.positions.back() {
+                    if let Some(tail_pos) = snake.state.positions.back() {
                         self.set_tile_at_pos(*tail_pos, Cell::SnakeTail(id));
                     }
                 }
@@ -737,12 +738,13 @@ impl GameBoard {
     ) -> Vec<Action> {
         [Action::Left, Action::Front, Action::Right]
             .iter()
-            .filter_map(
-                |action| match self.is_suicide_moves(from, orientation, action) {
-                    false => Some(action.clone()),
-                    true => None,
-                },
-            )
+            .filter_map(|action| {
+                if self.is_suicide_moves(from, orientation, action) {
+                    None
+                } else {
+                    Some(action.clone())
+                }
+            })
             .collect()
     }
 

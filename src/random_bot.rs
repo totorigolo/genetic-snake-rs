@@ -32,11 +32,10 @@ pub fn get_non_suicide_random_action(
     let possible_actions =
         board.get_non_suicide_moves(&myself.get_head_coord(), &myself.current_orientation);
 
-    return if possible_actions.is_empty() {
+    if possible_actions.is_empty() {
         Action::Front // We're doomed, so don't care ^^'
     } else {
         let action_idx = rng.gen_range(0, possible_actions.len());
-        let action = possible_actions[action_idx].clone();
-        action
-    };
+        possible_actions[action_idx].clone()
+    }
 }

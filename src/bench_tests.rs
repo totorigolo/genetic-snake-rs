@@ -63,5 +63,5 @@ pub fn test_simulation_speed<Bot: SnakeBot + Default>(
 /// I don't want to use nightly features, otherwise there is a
 /// `Duration::as_millis` method.
 fn as_millis(duration: Duration) -> f64 {
-    return duration.as_secs() as f64 * 1000. + duration.subsec_nanos() as f64 / 1_000_000.;
+    duration.as_secs() as f64 * 1000. + duration.subsec_nanos() as f64 / 1_000_000.
 }

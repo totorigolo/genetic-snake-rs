@@ -212,32 +212,32 @@ pub fn compute_stats_from(
             Coordinate { x, y: y - 1 },
             Coordinate { x, y: y + 1 },
         ]
-            .iter()
-            .for_each(|coord| {
-                let pos = coord.to_pos();
-                if !coord.is_out_of_bounds() && !added[pos as usize] {
-                    // Update the stats depending on the neighbor non-free-tile type
-                    match board.get_tile_at_pos(pos) {
-                        Cell::SnakeHead(id) => {
-                            if id != snake_id {
-                                sum_dist_enemy_heads += dist as f64;
-                            }
+        .iter()
+        .for_each(|coord| {
+            let pos = coord.to_pos();
+            if !coord.is_out_of_bounds() && !added[pos as usize] {
+                // Update the stats depending on the neighbor non-free-tile type
+                match board.get_tile_at_pos(pos) {
+                    Cell::SnakeHead(id) => {
+                        if id != snake_id {
+                            sum_dist_enemy_heads += dist as f64;
                         }
-                        Cell::SnakeTail(id) => {
-                            if id != snake_id {
-                                sum_dist_enemy_tails += dist as f64;
-                            }
-                        }
-                        Cell::Empty | Cell::Food => {
-                            // Add the neighbor the the fringe
-                            queue[queue_back] = (pos, dist + 1);
-                            queue_back += 1;
-                        }
-                        _ => {}
                     }
-                    added[pos as usize] = true;
+                    Cell::SnakeTail(id) => {
+                        if id != snake_id {
+                            sum_dist_enemy_tails += dist as f64;
+                        }
+                    }
+                    Cell::Empty | Cell::Food => {
+                        // Add the neighbor the the fringe
+                        queue[queue_back] = (pos, dist + 1);
+                        queue_back += 1;
+                    }
+                    _ => {}
                 }
-            });
+                added[pos as usize] = true;
+            }
+        });
     }
 
     // dists are "inf"=1 by default
