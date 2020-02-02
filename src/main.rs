@@ -107,11 +107,11 @@ fn human_vs_good_bot() {
     println!("{}", results);
 }
 
-enum WhichBot {
-    RandomBot,
-    HeuristicBot,
-    BestBot,
-    InteractiveBot,
+enum Bot {
+    Random,
+    Heuristic,
+    Best,
+    Interactive,
 }
 
 fn prompt_and_create_bots() -> Vec<Box<dyn SnakeBot>> {
@@ -131,16 +131,16 @@ fn prompt_and_create_bots() -> Vec<Box<dyn SnakeBot>> {
     for id in 1..=nb_players {
         let bot = prompt_which_bot(&format!("Which bot do you want for player {}?", id));
         match bot {
-            WhichBot::RandomBot => bots.push(Box::new(RandomBot::new())),
-            WhichBot::HeuristicBot => bots.push(Box::new(HeuristicBot::default())),
-            WhichBot::BestBot => bots.push(Box::new(HeuristicBot::new(&GA_WEIGHTS))),
-            WhichBot::InteractiveBot => bots.push(Box::new(InteractiveBot)),
+            Bot::Random => bots.push(Box::new(RandomBot::new())),
+            Bot::Heuristic => bots.push(Box::new(HeuristicBot::default())),
+            Bot::Best => bots.push(Box::new(HeuristicBot::new(&GA_WEIGHTS))),
+            Bot::Interactive => bots.push(Box::new(InteractiveBot)),
         };
     }
     bots
 }
 
-fn prompt_which_bot(msg: &str) -> WhichBot {
+fn prompt_which_bot(msg: &str) -> Bot {
     match Select::with_theme(&*DIALOG_THEME)
         .with_prompt(msg)
         .default(0)
@@ -150,10 +150,10 @@ fn prompt_which_bot(msg: &str) -> WhichBot {
         .item("human")
         .interact()
         .unwrap_or(0) {
-        0 => WhichBot::RandomBot,
-        1 => WhichBot::HeuristicBot,
-        2 => WhichBot::BestBot,
-        3 => WhichBot::InteractiveBot,
+        0 => Bot::Random,
+        1 => Bot::Heuristic,
+        2 => Bot::Best,
+        3 => Bot::Interactive,
         _ => unreachable!(),
     }
 }
@@ -198,8 +198,8 @@ fn speed_test() {
         .item("human-tuned heuristic bot")
         .interact()
         .unwrap_or(0) {
-        0 => WhichBot::RandomBot,
-        1 => WhichBot::HeuristicBot,
+        0 => Bot::Random,
+        1 => Bot::Heuristic,
         _ => unreachable!(),
     };
 
@@ -213,10 +213,10 @@ fn speed_test() {
 
     use crate::bench_tests::test_simulation_speed;
     match which_bot {
-        WhichBot::RandomBot => {
+        Bot::Random => {
             test_simulation_speed::<RandomBot>(nb_simulations, nb_bots, continue_if_winner, print);
         }
-        WhichBot::HeuristicBot => {
+        Bot::Heuristic => {
             test_simulation_speed::<HeuristicBot>(nb_simulations, nb_bots, continue_if_winner, print);
         }
         _ => unreachable!()
