@@ -69,7 +69,7 @@ impl Default for Parameters {
 }
 
 /// The fitness function for `GeneticBotGenome`s.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct WinRatioFitnessCalc {
     target_fitness: usize,
 }
@@ -343,7 +343,7 @@ fn learn_weights() -> Option<Weights> {
                 break;
             }
             Err(error) => {
-                println!("{}", error.display());
+                println!("{:?}", error);
                 max_fitness_bar.finish_and_clear();
                 break;
             }

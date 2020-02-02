@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 rand = "0.7"
-genevo = "0.2"
+genevo = "0.5"
 colored = "1"
 lazy_static = "1"
 rayon = "1"
